@@ -13,6 +13,7 @@ var MAX_PAGES_TO_VISIT = 50;
 var numPagesVisited = 0;
 
 class Crawler {
+
   constructor(startUrl) {
     this.startUrl = "https://" + startUrl;
     // this.url = new URL(this.startUrl);
@@ -75,25 +76,30 @@ class Crawler {
 
       console.log(url + ": " + response.statusCode);
 
-      // Parse the document body
-      var $ = cheerio.load(body);
-
-      var handler = new htmlparser.DomHandler(function (error, dom) {},
-      {
-        verbose: true
-      });
-
-      var parser = new htmlparser.Parser(handler);
-      parser.write($.html());
-      parser.done();
-
-      var result = '';
-      result = this.walk(handler.dom);
-      console.log(JSON.stringify(result));
+      var result = this.parse(body);
+      // console.log(JSON.stringify(result));
 
       // If you want to go deep and crawl subpages
       // callback();
     }.bind(this));
+  }
+
+  parse(html) {
+    // var $ = cheerio.load(html);
+    var handler = new htmlparser.DomHandler(function (error, dom) {},
+    {
+      verbose: true
+    });
+
+    var parser = new htmlparser.Parser(handler);
+    parser.write(html);
+    parser.done();
+
+    var result = '';
+    result = this.walk(handler.dom);
+    // console.log(JSON.stringify(result));
+
+    return result;
   }
 
   walk(dom, result) {
@@ -170,20 +176,19 @@ class Crawler {
   	// 					// 	break;
   	// 					// }
             default:
-              // console.log("walk internal switch ****************************** ", this.constructor.name);
   						result = this.walk(elem.children || [], result);
           };
           break;
         case 'text':
-  	// 		  if (elem.data.trim() !== '') {
-  	// 				// Text needs its leading space to be trimmed if `result`
-  	// 				// currently ends with whitespace
-    //         if (!result['text']) {
-    //           result['text'] = []
-    //         }
-    //         var t = text(elem);
-    // 				result['text'].push(t);
-  	// 			}
+  			  if (elem.data.trim() !== '') {
+  					// Text needs its leading space to be trimmed if `result`
+  					// currently ends with whitespace
+            if (!result['text']) {
+              result['text'] = []
+            }
+            var t = this.text(elem);
+    				result['text'].push(t);
+  				}
   				break;
         default:
           result = this.walk(elem.children || [], result);
@@ -200,7 +205,6 @@ class Crawler {
   }
 
   anchor(elem, fn) {
-
     if (elem.attribs && elem.attribs.href) {
       if (elem.attribs.href.trim() !== '#') {
         var text = fn(elem.children || []);
@@ -217,18 +221,34 @@ class Crawler {
     return null;
   }
 
+  text(elem) {
+    // console.log(elem);
+    // console.log(elem);
+  	// text = he.decode(text, options.decodeOptions);
+
+  	// if (options.isInPre) {
+  	// 	return text;
+  	// } else {
+  	// return helper.wordwrap(elem.trimLeadingSpace ? _s.lstrip(text) : text, options);
+  	// }
+    var text = he.decode(elem.data.trim());
+    return text;
+  }
+
 }
 
-var crawler = new Crawler('www.airbnb.com');
-crawler.crawl();
+module.exports = Crawler
+
+// var crawler = new Crawler('www.airbnb.com');
+// crawler.crawl();
 
 
 // var START_URL = "https://" + process.argv[2];
 // // var SEARCH_WORD = "apple";
-var MAX_PAGES_TO_VISIT = 50;
+// var MAX_PAGES_TO_VISIT = 50;
 //
 // var pagesVisited = {};
-var numPagesVisited = 0;
+// var numPagesVisited = 0;
 // var pagesToVisit = [];
 // var url = new URL(START_URL);
 // var baseUrl = url.protocol + "//" + url.hostname;
