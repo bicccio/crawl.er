@@ -9,11 +9,12 @@ var htmlparser = require('htmlparser2');
 var _ = require('underscore');
 var he = require('he');
 
+var MAX_PAGES_TO_VISIT = 50;
+var numPagesVisited = 0;
 
 class Crawler {
   constructor(startUrl) {
     this.startUrl = "https://" + startUrl;
-;
     // this.url = new URL(this.startUrl);
     // this.maxPageToVisit = 50;
     // this.baseUrl = this.url.protocol + "//" + this.url.hostname;
@@ -22,8 +23,6 @@ class Crawler {
     this.pagesToVisit.push(this.startUrl);
     this.pagesVisited = {};
     this.numPagesVisited = 0;
-
-
   }
 
   crawl() {
@@ -36,9 +35,10 @@ class Crawler {
     if (nextPage) {
       // savePageToVisit(pagesToVisit);
       if (nextPage in this.pagesVisited) {
+        // If you want to go deep and crawl subpages
         // crawl();
       } else {
-        this.visitPage(nextPage, this.crawl);
+        this.visitPage(nextPage, this.crawl.bind(this));
       }
     } else {
       console.log("Finish!!!");
@@ -68,6 +68,7 @@ class Crawler {
       //Check status code (200 is HTTP OK)
       if (!response || response.statusCode !== 200) {
         console.log("Response status code: ", response.statusCode);
+        // If you want to go deep and crawl subpages
         // callback();
         return;
       }
@@ -77,8 +78,8 @@ class Crawler {
       // Parse the document body
       var $ = cheerio.load(body);
 
-      var handler = new htmlparser.DomHandler(function (error, dom) {
-      }, {
+      var handler = new htmlparser.DomHandler(function (error, dom) {},
+      {
         verbose: true
       });
 
@@ -90,6 +91,7 @@ class Crawler {
       result = this.walk(handler.dom);
       console.log(JSON.stringify(result));
 
+      // If you want to go deep and crawl subpages
       // callback();
     }.bind(this));
   }
@@ -98,31 +100,33 @@ class Crawler {
     if (arguments.length < 2) {
   		var result = {};
   	}
-
     _.each(dom, function(elem) {
   		switch(elem.type) {
         case 'tag':
-          console.log("miao************");
-          console.log(this);
+
           switch(elem.name.toLowerCase()) {
             case 'img':
-              if (!result['img']) {
-                result['img'] = []
+              if (!result['images']) {
+                result['images'] = []
               }
               var img = this.image(elem);
               if (typeof img != 'undefined') {
-                result['img'].push(img);
+                result['images'].push(img);
               }
               break;
             case 'a':
   						// Inline element needs its leading space to be trimmed if `result`
   						// currently ends with whitespace
   						// elem.trimLeadingSpace = whiteSpaceRegex.test(result);
-              if (!result['anchor']) {
-                result['anchor'] = []
+              if (!result['anchors']) {
+                result['anchors'] = []
               }
-              var a = this.anchor(elem, this.walk);
-  						result['anchor'].push(a);
+              var a = this.anchor(elem, this.walk.bind(this));
+              if (a) {
+                // if (result['anchor'].indexOf(a) !== -1)
+                //   console.log("eccolo");
+  						  result['anchors'].push(a);
+              }
   						break;
     //         case 'p':
     //           if (!result['paragraphs']) {
@@ -166,6 +170,7 @@ class Crawler {
   	// 					// 	break;
   	// 					// }
             default:
+              // console.log("walk internal switch ****************************** ", this.constructor.name);
   						result = this.walk(elem.children || [], result);
           };
           break;
@@ -195,17 +200,21 @@ class Crawler {
   }
 
   anchor(elem, fn) {
-    var text = fn(elem.children || []);
-  	if (!text) {
-  		text = '';
-  	}
+
     if (elem.attribs && elem.attribs.href) {
-  		var href = elem.attribs.href.replace(/^mailto\:/, '');
+      if (elem.attribs.href.trim() !== '#') {
+        var text = fn(elem.children || []);
+        if (!text) {
+          text = '';
+        }
+  		  var href = elem.attribs.href.replace(/^mailto\:/, '').trim();
+        return {
+          href: href,
+          text: text
+        }
+      }
   	}
-    return {
-      href: href,
-      text: text
-    }
+    return null;
   }
 
 }
@@ -214,19 +223,19 @@ var crawler = new Crawler('www.airbnb.com');
 crawler.crawl();
 
 
-var START_URL = "https://" + process.argv[2];
-// var SEARCH_WORD = "apple";
+// var START_URL = "https://" + process.argv[2];
+// // var SEARCH_WORD = "apple";
 var MAX_PAGES_TO_VISIT = 50;
-
-var pagesVisited = {};
+//
+// var pagesVisited = {};
 var numPagesVisited = 0;
-var pagesToVisit = [];
-var url = new URL(START_URL);
-var baseUrl = url.protocol + "//" + url.hostname;
-var file = fs.createWriteStream('urls.txt');
-
-console.log("Start URL: ", START_URL);
-pagesToVisit.push(START_URL);
+// var pagesToVisit = [];
+// var url = new URL(START_URL);
+// var baseUrl = url.protocol + "//" + url.hostname;
+// var file = fs.createWriteStream('urls.txt');
+//
+// console.log("Start URL: ", START_URL);
+// pagesToVisit.push(START_URL);
 // savePageToVisit(pagesToVisit);
 
 //crawl();
@@ -387,48 +396,48 @@ pagesToVisit.push(START_URL);
 //
 // }
 
-function text(elem) {
-  // console.log(elem);
-  // console.log(elem);
-	// text = he.decode(text, options.decodeOptions);
+// function text(elem) {
+//   // console.log(elem);
+//   // console.log(elem);
+// 	// text = he.decode(text, options.decodeOptions);
+//
+// 	// if (options.isInPre) {
+// 	// 	return text;
+// 	// } else {
+// 	// return helper.wordwrap(elem.trimLeadingSpace ? _s.lstrip(text) : text, options);
+// 	// }
+//   var text = he.decode(elem.data.trim());
+//   return text;
+// }
 
-	// if (options.isInPre) {
-	// 	return text;
-	// } else {
-	// return helper.wordwrap(elem.trimLeadingSpace ? _s.lstrip(text) : text, options);
-	// }
-  var text = he.decode(elem.data.trim());
-  return text;
-}
+// function heading(elem, fn) {
+//   var heading = fn(elem.children);
+//   return heading
+// }
 
-function heading(elem, fn) {
-  var heading = fn(elem.children);
-  return heading
-}
-
-function paragraph(elem, fn) {
-  // console.log("paragraph: ", elem.children);
-  var p = fn(elem.children);
-  return p;
-}
+// function paragraph(elem, fn) {
+//   // console.log("paragraph: ", elem.children);
+//   var p = fn(elem.children);
+//   return p;
+// }
 
 // function image(elem) {
 //   return elem.attribs.src
 // }
 
-function anchor(elem, fn) {
-  var text = fn(elem.children || []);
-	if (!text) {
-		text = '';
-	}
-  if (elem.attribs && elem.attribs.href) {
-		var href = elem.attribs.href.replace(/^mailto\:/, '');
-	}
-  return {
-    href: href,
-    text: text
-  }
-}
+// function anchor(elem, fn) {
+//   var text = fn(elem.children || []);
+// 	if (!text) {
+// 		text = '';
+// 	}
+//   if (elem.attribs && elem.attribs.href && elem.attribs.href !== '#') {
+// 		var href = elem.attribs.href.replace(/^mailto\:/, '');
+// 	}
+//   return {
+//     href: href,
+//     text: text
+//   }
+// }
 
 // function searchForWord($, word) {
 //   var bodyText = $('html > body').text().toLowerCase();
