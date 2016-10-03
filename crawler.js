@@ -77,7 +77,7 @@ class Crawler {
       console.log(url + ": " + response.statusCode);
 
       var result = this.parse(body);
-      // console.log(JSON.stringify(result));
+      console.log(JSON.stringify(result));
 
       // If you want to go deep and crawl subpages
       // callback();
@@ -97,7 +97,7 @@ class Crawler {
 
     var result = '';
     result = this.walk(handler.dom);
-    // console.log(JSON.stringify(result));
+    //console.log(JSON.stringify(result));
 
     return result;
   }
@@ -207,15 +207,16 @@ class Crawler {
   anchor(elem, fn) {
     if (elem.attribs && elem.attribs.href) {
       if (elem.attribs.href.trim() !== '#') {
-        var text = fn(elem.children || []);
-        if (!text) {
-          text = '';
+        var content = fn(elem.children || []);
+        var res = {}
+        if (content.text) {
+          res.text = content.text.join("\n");
         }
-  		  var href = elem.attribs.href.replace(/^mailto\:/, '').trim();
-        return {
-          href: href,
-          text: text
+        if (content.images) {
+          res.images = content.images;
         }
+  		  res.href = elem.attribs.href.replace(/^mailto\:/, '').trim();
+        return res;
       }
   	}
     return null;
