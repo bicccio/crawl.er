@@ -4,25 +4,33 @@ var fs = require('fs');
 
 var simpleAnchor = '<a href="http://www.google.com">Google</a>'
 
-var divInsideAnchor = ` \
-  <a href="http://www.google.com"> \
+var divInsideAnchor = `
+  <a href="http://www.google.com">
     <div>Ciaone</div>
   </a>`
 
-var nestedDivAnchor = ` \
-  <a href="http://www.google.com"> \
+var nestedDivsAnchor = `
+  <a href="http://www.google.com">
     <div>
       <div>Ciaone</div>
     </div>
   </a>`
 
-var imageAnchor = ` \
-  <a href="http://www.google.com"> \
+var nestedMultipleDivAnchor = `
+  <a href="http://www.google.com">
+    <div>
+      <div>Ciaone</div>
+      <div>Miao</div>
+    </div>
+  </a>`
+
+var imageAnchor = `
+  <a href="http://www.google.com">
     <img src="www.gogle.com/image.png"></img>
   </a>`
 
-var nestedImageAnchor = ` \
-  <a href="http://www.google.com"> \
+var nestedImageAnchor = `
+  <a href="http://www.google.com">
     <div>
       <span>
         <img src="www.gogle.com/image.png"></img>
@@ -30,6 +38,12 @@ var nestedImageAnchor = ` \
     </div>
   </a>`
 
+var nestedAnchor = `
+  <div>
+    <span>
+    <a href="http://www.google.com">Google</a>
+    </span>
+  </div>`
 
 describe('Crawler', function() {
   var crawler = new Crawler();
@@ -59,7 +73,7 @@ describe('Crawler', function() {
   });
 
   describe('parse nested div', function() {
-    var result = crawler.parse(nestedDivAnchor);
+    var result = crawler.parse(nestedDivsAnchor);
 
     it('return href', function() {
       assert.equal(result.anchors[0].href, "http://www.google.com");
@@ -67,6 +81,18 @@ describe('Crawler', function() {
 
     it('return content text', function(){
       assert.equal(result.anchors[0].text, "Ciaone");
+    });
+  });
+
+  describe('parse nested multiple div', function() {
+    var result = crawler.parse(nestedMultipleDivAnchor);
+
+    it('return href', function() {
+      assert.equal(result.anchors[0].href, "http://www.google.com");
+    });
+
+    it('return content text', function(){
+      assert.equal(result.anchors[0].text, "Ciaone\nMiao");
     });
   });
 
@@ -93,6 +119,19 @@ describe('Crawler', function() {
       assert.equal(result.anchors[0].images, "www.gogle.com/image.png");
     });
   });
+
+  describe('nested anchor', function() {
+    var result = crawler.parse(nestedAnchor);
+
+    it('return href', function() {
+      assert.equal(result.anchors[0].href, "http://www.google.com");
+    });
+
+    it('return content text', function(){
+      assert.equal(result.anchors[0].text, "Google");
+    });
+  });
+
 
 
 

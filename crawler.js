@@ -97,7 +97,6 @@ class Crawler {
 
     var result = '';
     result = this.walk(handler.dom);
-    //console.log(JSON.stringify(result));
 
     return result;
   }
@@ -109,7 +108,6 @@ class Crawler {
     _.each(dom, function(elem) {
   		switch(elem.type) {
         case 'tag':
-
           switch(elem.name.toLowerCase()) {
             case 'img':
               if (!result['images']) {
@@ -121,38 +119,31 @@ class Crawler {
               }
               break;
             case 'a':
-  						// Inline element needs its leading space to be trimmed if `result`
-  						// currently ends with whitespace
-  						// elem.trimLeadingSpace = whiteSpaceRegex.test(result);
               if (!result['anchors']) {
                 result['anchors'] = []
               }
               var a = this.anchor(elem, this.walk.bind(this));
               if (a) {
-                // if (result['anchor'].indexOf(a) !== -1)
-                //   console.log("eccolo");
   						  result['anchors'].push(a);
               }
   						break;
-    //         case 'p':
-    //           if (!result['paragraphs']) {
-    //             result['paragraphs'] = []
-    //           }
-    //           var p = paragraph(elem, walk);
-  	// 					result['paragraphs'].push(p);
-  	// 					break;
-    //         case 'h1':
-  	// 				case 'h2':
-  	// 				case 'h3':
-  	// 				case 'h4':
-  	// 				case 'h5':
-  	// 				case 'h6':
-    //           if (!result['heading']) {
-    //             result['heading'] = []
-    //           }
-    //           var h = heading(elem, walk);
-  	// 					result['heading'].push(h);
-  	// 					break;
+            // case 'p':
+            //   this.walk(elem.children, result);
+  					// 	break;
+            case 'h1':
+  					case 'h2':
+  					case 'h3':
+  					case 'h4':
+  					case 'h5':
+  					case 'h6':
+              if (!result['heading']) {
+                result['heading'] = []
+              }
+              var h = this.heading(elem, this.walk.bind(this));
+              if (h) {
+  						  result['heading'].push(h);
+              }
+  						break;
     //         case 'br':
   	// 					// result += format.lineBreak(elem, walk, options);
   	// 					break;
@@ -205,6 +196,7 @@ class Crawler {
   }
 
   anchor(elem, fn) {
+    // se l'anchor non ha href???
     if (elem.attribs && elem.attribs.href) {
       if (elem.attribs.href.trim() !== '#') {
         var content = fn(elem.children || []);
@@ -223,10 +215,6 @@ class Crawler {
   }
 
   text(elem) {
-    // console.log(elem);
-    // console.log(elem);
-  	// text = he.decode(text, options.decodeOptions);
-
   	// if (options.isInPre) {
   	// 	return text;
   	// } else {
@@ -236,30 +224,20 @@ class Crawler {
     return text;
   }
 
+  heading(elem, fn) {
+    var res = {};
+    res.name = elem.name
+    var content = fn(elem.children);
+    if (content.text) {
+      res.text = content.text;
+    } else if (content.anchors) {
+      res.anchors = content.anchors;
+    }
+    return res;
+  }
 }
 
 module.exports = Crawler
-
-// var crawler = new Crawler('www.airbnb.com');
-// crawler.crawl();
-
-
-// var START_URL = "https://" + process.argv[2];
-// // var SEARCH_WORD = "apple";
-// var MAX_PAGES_TO_VISIT = 50;
-//
-// var pagesVisited = {};
-// var numPagesVisited = 0;
-// var pagesToVisit = [];
-// var url = new URL(START_URL);
-// var baseUrl = url.protocol + "//" + url.hostname;
-// var file = fs.createWriteStream('urls.txt');
-//
-// console.log("Start URL: ", START_URL);
-// pagesToVisit.push(START_URL);
-// savePageToVisit(pagesToVisit);
-
-//crawl();
 
 // function crawl() {
 //   if(numPagesVisited >= MAX_PAGES_TO_VISIT) {
