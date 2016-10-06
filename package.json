@@ -6,7 +6,7 @@
   "scripts": {
     "app": "node app.js www.airbnb.it",
     "appJson": "node app.js www.airbnb.it | prettyjson",
-    "test": "node_modules/mocha/bin/mocha --watch --watch-extensions js test"
+    "test": "node_modules/mocha/bin/mocha --reporter mocha-osx-reporter --watch --watch-extensions js test"
   },
   "author": "",
   "license": "ISC",
@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "chai": "^3.5.0",
-    "mocha": "^3.1.0"
+    "mocha": "^3.1.0",
+    "mocha-osx-reporter": "^0.1.2"
   }
 }
