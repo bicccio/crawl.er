@@ -77,11 +77,15 @@ class Crawler {
       console.log(url + ": " + response.statusCode);
 
       var result = this.parse(body);
-      console.log(JSON.stringify(result));
+      this.output(result);
 
       // If you want to go deep and crawl subpages
       // callback();
     }.bind(this));
+  }
+
+  output(res) {
+    //console.log(JSON.stringify(result));
   }
 
   parse(html) {
@@ -161,11 +165,12 @@ class Crawler {
   	// 					// newOptions.isInPre = true;
   	// 					// result += format.paragraph(elem, walk, newOptions);
   	// 					break;
-  	// 				case 'table':
-  	// 					// if (containsTable(elem.attribs, options.tables)) {
-  	// 					// 	result += format.table(elem, walk, options);
-  	// 					// 	break;
-  	// 					// }
+  					case 'table':
+              console.log(elem);
+  						// if (containsTable(elem.attribs, options.tables)) {
+  						// 	result += format.table(elem, walk, options);
+  						// 	break;
+  						// }
             default:
   						result = this.walk(elem.children || [], result);
           };
@@ -202,10 +207,13 @@ class Crawler {
         var content = fn(elem.children || []);
         var res = {}
         if (content.text) {
-          res.text = content.text.join("\n");
+          res.text = content.text;
         }
         if (content.images) {
           res.images = content.images;
+        }
+        if (content.heading) {
+          res.heading = content.heading;
         }
   		  res.href = elem.attribs.href.replace(/^mailto\:/, '').trim();
         return res;

@@ -41,9 +41,14 @@ var nestedImageAnchor = `
 var nestedAnchor = `
   <div>
     <span>
-    <a href="http://www.google.com">Google</a>
+      <a href="http://www.google.com">Google</a>
     </span>
   </div>`
+
+var h1InAnchor = `
+  <a href="http://www.google.com">
+    <h1>miao</h1>
+  </a>`
 
 describe('Crawler', function() {
   var crawler = new Crawler();
@@ -92,7 +97,8 @@ describe('Crawler', function() {
     });
 
     it('return content text', function(){
-      assert.equal(result.anchors[0].text, "Ciaone\nMiao");
+      assert.equal(result.anchors[0].text[0], "Ciaone");
+      assert.equal(result.anchors[0].text[1], "Miao");
     });
   });
 
@@ -132,7 +138,20 @@ describe('Crawler', function() {
     });
   });
 
+  describe('h1 inside ', function() {
+    var result = crawler.parse(h1InAnchor);
+    it('return href', function() {
+      assert.equal(result.anchors[0].href, "http://www.google.com");
+    });
 
+    it('return content h1 name', function(){
+      assert.equal(result.anchors[0].heading[0].name, "h1");
+    });
 
+    it('return content h1 text', function(){
+      assert.equal(result.anchors[0].heading[0].text[0], "miao");
+    });
+
+  });
 
 });

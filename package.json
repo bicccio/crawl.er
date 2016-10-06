@@ -4,6 +4,8 @@
   "description": "",
   "main": "crawler.js",
   "scripts": {
+    "app": "node app.js www.airbnb.it",
+    "appJson": "node app.js www.airbnb.it | prettyjson",
     "test": "node_modules/mocha/bin/mocha --watch --watch-extensions js test"
   },
   "author": "",
