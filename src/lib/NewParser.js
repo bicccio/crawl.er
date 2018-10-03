@@ -10,7 +10,7 @@ export default class {
 
     var handler = new htmlparser.DomHandler(function (error, dom) {}, {
       verbose: true
-    });
+    })
 
     var parser = new htmlparser.Parser(handler);
     parser.write(html);

@@ -1,0 +1,8 @@
+
+node_modules
+
+dist
+
+*.old.js
+
+out.json

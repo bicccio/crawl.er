@@ -1,6 +1,11 @@
-import Crawler from './lib/Crawler';
-console.log(Crawler);
-const START_URL = 'https://' + process.argv[2];
+import Crawler from "./lib/Crawler";
+let url = "https://www.musixmatch.com";
 
-var crawler = new Crawler(START_URL);
+if (process.argv[2]) {
+  url = process.argv[2];
+}
+
+const START_URL = "https//" + url;
+
+var crawler = new Crawler(url);
 crawler.crawl();
