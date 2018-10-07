@@ -1,11 +1,8 @@
 "use strict";
 
 import request from "request";
-import URL from "url-parse";
-import fs from "fs";
-import _ from "underscore";
 
-import Parser from "./SimpleRecursor";
+import Parser from "./Parser";
 
 const MAX_PAGES_TO_VISIT = 50;
 const numPagesVisited = 0;
@@ -24,34 +21,27 @@ const HEADERS = {
 export default class Crawler {
   constructor(startUrl) {
     this.startUrl = startUrl;
-    // this.url = new URL(this.startUrl);
-    // this.maxPageToVisit = 50;
-    // this.baseUrl = this.url.protocol + "//" + this.url.hostname;
-    // this.file = fs.createWriteStream('urls.txt');
-
-    this.pagesToVisit = [];
-    this.pagesToVisit.push(this.startUrl);
+    this.pagesToVisit = [this.startUrl];
     this.pagesVisited = {};
     this.numPagesVisited = 0;
+    this.parser = new Parser();
   }
 
   crawl() {
-    if (numPagesVisited >= MAX_PAGES_TO_VISIT) {
-      console.log("Reached max limit of number of pages to visit.");
-      return;
-    }
-
-    let nextPage = this.pagesToVisit.pop();
-    if (nextPage) {
-      // savePageToVisit(pagesToVisit);
-      if (nextPage in this.pagesVisited) {
-        // If you want to go deep and crawl subpages
-        // this.crawl();
-      } else {
-        this.visitPage(nextPage, this.crawl.bind(this));
+    try {
+      if (numPagesVisited >= MAX_PAGES_TO_VISIT) {
+        console.log("Max limit of number of pages reached");
+        return;
       }
-    } else {
-      console.log("Finish!!!");
+
+      const nextPage = this.pagesToVisit.pop();
+      if (nextPage && !(nextPage in this.pagesVisited)) {
+        this.visitPage(nextPage);
+      } else {
+        console.log("Finish!!!");
+      }
+    } catch (error) {
+      console.log(error);
     }
   }
 
@@ -66,34 +56,24 @@ export default class Crawler {
     request(
       {
         url: url,
-        headers: HEADERS
+        method: "GET"
+        //headers: HEADERS
       },
       (error, response, body) => {
         if (error) {
-          console.log(error);
-          return;
+          throw error;
         }
 
         if (!response || response.statusCode !== 200) {
           console.log("Response status code: ", response.statusCode);
-          // If you want to go deep and crawl subpages
-          // callback();
           return;
         }
 
         console.log(url + ": " + response.statusCode);
-        let parser = new Parser();
-        let result = parser.parse(body);
-        // res.setHeader("Content-Type", "application/json");
-        // res.send(JSON.stringify(result));
 
-        // If you want to go deep and crawl subpages
-        // callback();
+        const anchors = this.parser.parse(body);
+        console.log(anchors[112]);
       }
     );
   }
-
-  //parse() {}
-
-  //fakerequest(options, body) {}
 }
