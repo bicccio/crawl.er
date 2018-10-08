@@ -8,4 +8,8 @@ if (process.argv[2]) {
 
 const crawler = new Crawler(url);
 
-crawler.crawl();
+try {
+  crawler.crawl();
+} catch (e) {
+  console.log(e);
+}
