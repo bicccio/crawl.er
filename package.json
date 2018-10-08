@@ -5,14 +5,16 @@
   "main": "crawler.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "babel src -s -D -d dist --presets es2015,stage-0"
+    "build": "babel src -s -D -d dist --presets es2015,stage-0",
+    "start": "./node_modules/.bin/babel-node src/crawler.js"
   },
   "author": "@biccc",
   "license": "ISC",
   "dependencies": {
     "cheerio": "^0.20.0",
     "htmlparser2": "^3.9.2",
-    "request": "^2.73.0"
+    "request": "^2.73.0",
+    "request-promise": "^4.2.2"
   },
   "devDependencies": {
     "babel-cli": "^6.9.0",
