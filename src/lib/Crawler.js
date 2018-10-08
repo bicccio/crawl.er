@@ -1,11 +1,10 @@
 "use strict";
 
-import request from "request";
+import request from "request-promise";
 
 import Parser from "./Parser";
 
-const MAX_PAGES_TO_VISIT = 50;
-const numPagesVisited = 0;
+const MAX_PAGES_TO_VISIT = 500;
 const HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36",
@@ -27,25 +26,33 @@ export default class Crawler {
     this.parser = new Parser();
   }
 
-  crawl() {
-    try {
-      if (numPagesVisited >= MAX_PAGES_TO_VISIT) {
+  async crawl() {
+    while (this.pagesToVisit.length > 0) {
+      if (this.numPagesVisited >= MAX_PAGES_TO_VISIT) {
         console.log("Max limit of number of pages reached");
         return;
       }
 
       const nextPage = this.pagesToVisit.pop();
       if (nextPage && !(nextPage in this.pagesVisited)) {
-        this.visitPage(nextPage);
+        try {
+          await this.visitPage(nextPage);
+        } catch (error) {
+          console.log(
+            error.statusCode +
+              " - " +
+              (error.response && error.response.statusMessage)
+          );
+          //throw error;
+        }
       } else {
-        console.log("Finish!!!");
+        console.log("Already visited!!!");
       }
-    } catch (error) {
-      console.log(error);
     }
+    console.log("***********+ Finish ***********+");
   }
 
-  visitPage(url) {
+  async visitPage(url) {
     // Add page to our set
     this.pagesVisited[url] = true;
     this.numPagesVisited++;
@@ -53,27 +60,24 @@ export default class Crawler {
     // Make the request
     console.log("Visiting page " + url);
 
-    request(
-      {
-        url: url,
-        method: "GET"
-        //headers: HEADERS
-      },
-      (error, response, body) => {
-        if (error) {
-          throw error;
-        }
+    var options = {
+      uri: url,
+      headers: HEADERS
+    };
 
-        if (!response || response.statusCode !== 200) {
-          console.log("Response status code: ", response.statusCode);
-          return;
-        }
+    try {
+      const html = await request(options);
 
-        console.log(url + ": " + response.statusCode);
-
-        const anchors = this.parser.parse(body);
-        console.log(anchors[112]);
+      const urls = this.parser.parse(html);
+      if (urls.length > 0) {
+        urls.forEach(url => {
+          if (url && url.indexOf("http") > -1) {
+            this.pagesToVisit.push(url);
+          }
+        });
       }
-    );
+    } catch (error) {
+      throw error;
+    }
   }
 }
