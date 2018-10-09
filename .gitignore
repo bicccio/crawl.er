@@ -8,3 +8,5 @@ dist
 out.json
 
 launch.json
+
+.vscode

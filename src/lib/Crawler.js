@@ -1,10 +1,14 @@
 "use strict";
 
 import request from "request-promise";
+import parserUrl from "url";
+
+import blackList from "../../blackList.json";
 
 import Parser from "./Parser";
 
-const MAX_PAGES_TO_VISIT = 500;
+const MAX_PAGES_TO_VISIT = 500000;
+
 const HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36",
@@ -34,7 +38,14 @@ export default class Crawler {
       }
 
       const nextPage = this.pagesToVisit.pop();
-      if (nextPage && !(nextPage in this.pagesVisited)) {
+
+      const hostName = parserUrl.parse(nextPage).hostname;
+
+      if (
+        nextPage &&
+        !(nextPage in this.pagesVisited) &&
+        blackList.urls.indexOf(hostName) < 0
+      ) {
         try {
           await this.visitPage(nextPage);
         } catch (error) {
@@ -43,10 +54,7 @@ export default class Crawler {
               " - " +
               (error.response && error.response.statusMessage)
           );
-          //throw error;
         }
-      } else {
-        console.log("Already visited!!!");
       }
     }
     console.log("***********+ Finish ***********+");
@@ -58,7 +66,7 @@ export default class Crawler {
     this.numPagesVisited++;
 
     // Make the request
-    console.log("Visiting page " + url);
+    console.log("Visiting page n° " + this.numPagesVisited + ": " + url);
 
     var options = {
       uri: url,
