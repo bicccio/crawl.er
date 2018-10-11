@@ -6,6 +6,7 @@ import parserUrl from "url";
 import blackList from "../../blackList.json";
 
 import Parser from "./Parser";
+import ArrayStore from "./ArrayStore";
 
 const MAX_PAGES_TO_VISIT = 500000;
 
@@ -24,25 +25,29 @@ const HEADERS = {
 export default class Crawler {
   constructor(startUrl) {
     this.startUrl = startUrl;
-    this.pagesToVisit = [this.startUrl];
     this.pagesVisited = {};
     this.numPagesVisited = 0;
     this.parser = new Parser();
+    this.store = new ArrayStore(this.startUrl);
   }
 
   async crawl() {
-    while (this.pagesToVisit.length > 0) {
+    while (this.store.length > 0) {
       if (this.numPagesVisited >= MAX_PAGES_TO_VISIT) {
         console.log("Max limit of number of pages reached");
         return;
       }
 
-      const nextPage = this.pagesToVisit.pop();
+      const nextPage = this.store.shift();
+
+      if (!nextPage) {
+        console.log("************** Finish ********************");
+        return;
+      }
 
       const hostName = parserUrl.parse(nextPage).hostname;
 
       if (
-        nextPage &&
         !(nextPage in this.pagesVisited) &&
         blackList.urls.indexOf(hostName) < 0
       ) {
@@ -57,7 +62,6 @@ export default class Crawler {
         }
       }
     }
-    console.log("***********+ Finish ***********+");
   }
 
   async visitPage(url) {
@@ -80,7 +84,7 @@ export default class Crawler {
       if (urls.length > 0) {
         urls.forEach(url => {
           if (url && url.indexOf("http") > -1) {
-            this.pagesToVisit.push(url);
+            this.store.push(url);
           }
         });
       }
