@@ -16,8 +16,7 @@ const HEADERS = {
   Pragma: "no-cache",
   "Accept-Language": "it-IT,it;q=0.8,en-US;q=0.6,en;q=0.4,fr;q=0.2,es;q=0.2",
   "Upgrade-Insecure-Requests": "1",
-  Accept:
-    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
   keepAlive: "Connection: keep-alive",
   cacheControl: "Cache-Control: no-cache"
 };
@@ -32,7 +31,7 @@ export default class Crawler {
   }
 
   async crawl() {
-    while (this.store.length > 0) {
+    while (this.store.length() > 0) {
       if (this.numPagesVisited >= MAX_PAGES_TO_VISIT) {
         console.log("Max limit of number of pages reached");
         return;
@@ -47,18 +46,11 @@ export default class Crawler {
 
       const hostName = parserUrl.parse(nextPage).hostname;
 
-      if (
-        !(nextPage in this.pagesVisited) &&
-        blackList.urls.indexOf(hostName) < 0
-      ) {
+      if (!(nextPage in this.pagesVisited) && blackList.urls.indexOf(hostName) < 0) {
         try {
           await this.visitPage(nextPage);
         } catch (error) {
-          console.log(
-            error.statusCode +
-              " - " +
-              (error.response && error.response.statusMessage)
-          );
+          console.log(error.statusCode + " - " + (error.response && error.response.statusMessage));
         }
       }
     }
