@@ -1,3 +1,12 @@
+
 node_modules
-npm-debug.log
-urls.txt
+
+dist
+
+*.old.js
+
+out.json
+
+launch.json
+
+.vscode

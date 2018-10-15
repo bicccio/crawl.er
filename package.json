@@ -4,24 +4,31 @@
   "description": "",
   "main": "crawler.js",
   "scripts": {
-    "app": "node app.js www.airbnb.it",
-    "appJson": "node app.js www.airbnb.it | prettyjson",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "babel src -s -D -d dist --presets es2015,stage-0",
+    "start": "./node_modules/.bin/babel-node src/crawler.js",
     "test": "node_modules/mocha/bin/mocha --reporter mocha-osx-reporter --watch --watch-extensions js test"
   },
-  "author": "",
+  "author": "@biccc",
   "license": "ISC",
   "dependencies": {
     "cheerio": "^0.20.0",
-    "he": "^1.1.0",
-    "html-to-text": "^2.1.3",
-    "htmlparser2": "^3.9.1",
+    "htmlparser2": "^3.9.2",
+    "netdb": "^2017.3.17",
     "request": "^2.73.0",
-    "underscore": "^1.8.3",
-    "url-parse": "^1.1.1"
+    "request-promise": "^4.2.2",
+    "robots": "^0.10.1"
   },
   "devDependencies": {
+    "babel-cli": "^6.9.0",
+    "babel-core": "^6.9.0",
+    "babel-polyfill": "^6.16.0",
+    "babel-preset-es2015": "^6.9.0",
+    "babel-preset-stage-0": "^6.5.0",
     "chai": "^3.5.0",
-    "mocha": "^3.1.0",
-    "mocha-osx-reporter": "^0.1.2"
+    "eslint": "^3.1.1",
+    "mocha": "^5.2.0",
+    "mocha-osx-reporter": "^0.1.2",
+    "nodemon": "^1.9.2"
   }
 }
