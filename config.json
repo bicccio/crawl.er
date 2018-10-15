@@ -1,0 +1,12 @@
+{
+  "MAX_PAGES_TO_VISIT": 500000,
+  "HEADERS": {
+    "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "Pragma": "no-cache",
+    "Accept-Language": "it-IT,it;q=0.8,en-US;q=0.6,en;q=0.4,fr;q=0.2,es;q=0.2",
+    "Upgrade-Insecure-Requests": "1",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "keepAlive": "Connection: keep-alive",
+    "cacheControl": "Cache-Control: no-cache"
+  }
+}

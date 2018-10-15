@@ -1,10 +1,14 @@
 "use strict";
 
 import cheerio from "cheerio";
+let $ = {};
 
 export default class Parser {
   parse(html) {
-    const $ = cheerio.load(html);
+    $ = cheerio.load(html);
+  }
+
+  getLinks() {
     const anchors = $("a");
     const hrefs = [];
 
@@ -15,9 +19,4 @@ export default class Parser {
 
     return hrefs;
   }
-
-  // walk($) {
-  //   const anchors = $("a");
-  //   return anchors;
-  // }
 }
