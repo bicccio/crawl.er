@@ -3,7 +3,6 @@
 import request from "request-promise";
 import parserUrl from "url";
 import robots from "robots";
-const robotsParser = new robots.RobotsParser();
 import blackList from "../../blackList.json";
 import config from "../../config.json";
 
@@ -31,11 +30,11 @@ export default class Crawler {
 
       const hostname = parserUrl.parse(nextPage).hostname;
 
-      if (nextPage in this.pagesVisited || blackList.urls.indexOf(hostname) > -1) return;
+      if (nextPage in this.pagesVisited || blackList.urls.indexOf(hostname) > -1) continue;
 
       let canFetch = false;
       try {
-        canFetch = await this.canFetch(nextPage, config.HEADERS["User-Agent"]);
+        canFetch = this.canFetch(nextPage, config.HEADERS["User-Agent"]);
       } catch (e) {
         canFetch = false;
       }
@@ -46,6 +45,8 @@ export default class Crawler {
         console.log(error);
       }
     }
+
+    console.log("finish");
   }
 
   async visitPage(url) {
@@ -80,17 +81,8 @@ export default class Crawler {
   canFetch(url, userAgent) {
     const { hostname, protocol } = parserUrl.parse(url);
     const robotsUrl = protocol + "//" + hostname + "/robots.txt";
+    const parser = new robots.RobotsParser(robotsUrl);
 
-    return new Promise((resolve, reject) => {
-      robotsParser.setUrl(robotsUrl, (parser, success) => {
-        if (success) {
-          parser.canFetch(userAgent, url, access => {
-            resolve(access);
-          });
-        } else {
-          reject(false);
-        }
-      });
-    });
+    return parser.canFetchSync(userAgent, url)
   }
 }
