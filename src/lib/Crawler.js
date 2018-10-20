@@ -5,6 +5,7 @@ import parserUrl from "url";
 import robots from "robots";
 import blackList from "../../blackList.json";
 import config from "../../config.json";
+import logger from "./log";
 
 export default class Crawler {
   constructor(parser, store) {
@@ -17,7 +18,7 @@ export default class Crawler {
   async crawl() {
     while (this.store.length() > 0) {
       if (this.numPagesVisited >= config.MAX_PAGES_TO_VISIT) {
-        console.log("Max limit of number of pages reached");
+        logger.info("Max limit of number of pages reached");
         return;
       }
 
@@ -41,7 +42,7 @@ export default class Crawler {
           await this.visitPage(nextPage);
       } catch (error) {
         if (error.name && error.statusCode)
-          console.log("Error: " + error.name + " - " + error.statusCode);
+          logger.error("Error: " + error.name + " - " + error.statusCode);
       }
     }
 
@@ -49,7 +50,7 @@ export default class Crawler {
   }
 
   finish() {
-    console.log("************** Finish ********************");
+    logger.info("************** Finish ********************");
   }
 
   async visitPage(url) {
@@ -67,7 +68,7 @@ export default class Crawler {
 
       this.parser.parse(html);
 
-      console.log(
+      logger.info(
         "Visiting page n° " +
           this.numPagesVisited +
           ": " +

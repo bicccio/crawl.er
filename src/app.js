@@ -1,6 +1,7 @@
 import Crawler from "./lib/Crawler";
 import ArrayStore from "./lib/ArrayStore";
 import Parser from "./lib/Parser";
+import logger from "./lib/log";
 
 let url = "https://news.ycombinator.com/";
 
@@ -15,5 +16,5 @@ const crawler = new Crawler(parser, store);
 try {
   crawler.crawl();
 } catch (e) {
-  console.log(e);
+  logger.error(e);
 }
