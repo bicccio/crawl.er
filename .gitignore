@@ -12,3 +12,7 @@ launch.json
 .vscode
 
 old
+
+config.json
+
+black_list.json

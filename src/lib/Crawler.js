@@ -3,8 +3,8 @@
 import request from "request-promise";
 import parserUrl from "url";
 import robots from "robots";
-import blackList from "../../blackList.json";
-import config from "../../config.json";
+import blackList from "../../assets/blackList.json";
+import { MAX_PAGES_TO_VISIT, HEADERS } from "../../assets/config.json";
 import logger from "./log";
 
 export default class Crawler {
@@ -16,17 +16,20 @@ export default class Crawler {
   }
 
   async crawl() {
+    if (!this.store) {
+      this.finish();
+    }
+
     while (this.store.length() > 0) {
-      if (this.numPagesVisited >= config.MAX_PAGES_TO_VISIT) {
+      if (this.numPagesVisited >= MAX_PAGES_TO_VISIT) {
         logger.info("Max limit of number of pages reached");
-        return;
+        this.finish();
       }
 
       const nextPage = this.store.shift();
 
       if (!nextPage) {
         this.finish();
-        return;
       }
 
       const hostname = parserUrl.parse(nextPage).hostname;
@@ -38,7 +41,7 @@ export default class Crawler {
         continue;
 
       try {
-        if (this.canFetch(nextPage, config.HEADERS["User-Agent"]))
+        if (this.canFetch(nextPage, HEADERS["User-Agent"]))
           await this.visitPage(nextPage);
       } catch (error) {
         if (error.name && error.statusCode)
@@ -51,6 +54,7 @@ export default class Crawler {
 
   finish() {
     logger.info("************** Finish ********************");
+    process.exit();
   }
 
   async visitPage(url) {
@@ -59,7 +63,7 @@ export default class Crawler {
 
     const options = {
       uri: url,
-      headers: config.HEADERS
+      headers: HEADERS
     };
 
     try {
