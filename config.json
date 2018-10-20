@@ -8,5 +8,6 @@
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     "keepAlive": "Connection: keep-alive",
     "cacheControl": "Cache-Control: no-cache"
-  }
+  },
+  "DEFAULT_URL": "https://news.ycombinator.com/"
 }

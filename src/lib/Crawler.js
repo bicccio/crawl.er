@@ -54,11 +54,10 @@ export default class Crawler {
   }
 
   async visitPage(url) {
-    // Add page to our set
     this.pagesVisited[url] = true;
     this.numPagesVisited++;
 
-    var options = {
+    const options = {
       uri: url,
       headers: config.HEADERS
     };
@@ -90,8 +89,10 @@ export default class Crawler {
 
   canFetch(url, userAgent) {
     const { hostname, protocol } = parserUrl.parse(url);
-    const robotsUrl = protocol + "//" + hostname + "/robots.txt";
-    const parser = new robots.RobotsParser(robotsUrl);
+
+    const parser = new robots.RobotsParser(
+      protocol + "//" + hostname + "/robots.txt"
+    );
 
     return parser.canFetchSync(userAgent, url);
   }
