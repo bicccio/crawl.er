@@ -8,6 +8,10 @@ export default class Parser {
     $ = cheerio.load(html);
   }
 
+  getTitle() {
+    return $("title").text();
+  }
+
   getLinks() {
     const anchors = $("a");
     const hrefs = [];

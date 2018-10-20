@@ -4,10 +4,9 @@
   "description": "",
   "main": "crawler.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node_modules/mocha/bin/mocha --reporter mocha-osx-reporter --watch --watch-extensions js test",
     "build": "babel src -s -D -d dist --presets es2015,stage-0",
-    "start": "./node_modules/.bin/babel-node src/crawler.js",
-    "test": "node_modules/mocha/bin/mocha --reporter mocha-osx-reporter --watch --watch-extensions js test"
+    "start": "./node_modules/.bin/babel-node src/app.js"
   },
   "author": "@biccc",
   "license": "ISC",
@@ -17,7 +16,8 @@
     "netdb": "^2017.3.17",
     "request": "^2.73.0",
     "request-promise": "^4.2.2",
-    "robots": "^0.10.1"
+    "robots": "^0.10.1",
+    "winston": "^3.1.0"
   },
   "devDependencies": {
     "babel-cli": "^6.9.0",

@@ -24,37 +24,38 @@ export default class Crawler {
       const nextPage = this.store.shift();
 
       if (!nextPage) {
-        console.log("************** Finish ********************");
+        this.finish();
         return;
       }
 
       const hostname = parserUrl.parse(nextPage).hostname;
 
-      if (nextPage in this.pagesVisited || blackList.urls.indexOf(hostname) > -1) continue;
-
-      let canFetch = false;
-      try {
-        canFetch = this.canFetch(nextPage, config.HEADERS["User-Agent"]);
-      } catch (e) {
-        canFetch = false;
-      }
+      if (
+        nextPage in this.pagesVisited ||
+        blackList.urls.indexOf(hostname) > -1
+      )
+        continue;
 
       try {
-        if (canFetch) await this.visitPage(nextPage);
+        if (this.canFetch(nextPage, config.HEADERS["User-Agent"]))
+          await this.visitPage(nextPage);
       } catch (error) {
-        console.log(error);
+        if (error.name && error.statusCode)
+          console.log("Error: " + error.name + " - " + error.statusCode);
       }
     }
 
-    console.log("finish");
+    this.finish();
+  }
+
+  finish() {
+    console.log("************** Finish ********************");
   }
 
   async visitPage(url) {
     // Add page to our set
     this.pagesVisited[url] = true;
     this.numPagesVisited++;
-
-    console.log("Visiting page n° " + this.numPagesVisited + ": " + url);
 
     var options = {
       uri: url,
@@ -65,6 +66,14 @@ export default class Crawler {
       const html = await request(options);
 
       this.parser.parse(html);
+
+      console.log(
+        "Visiting page n° " +
+          this.numPagesVisited +
+          ": " +
+          this.parser.getTitle()
+      );
+
       const links = this.parser.getLinks();
       if (links.length === 0) return;
 
@@ -83,6 +92,6 @@ export default class Crawler {
     const robotsUrl = protocol + "//" + hostname + "/robots.txt";
     const parser = new robots.RobotsParser(robotsUrl);
 
-    return parser.canFetchSync(userAgent, url)
+    return parser.canFetchSync(userAgent, url);
   }
 }
