@@ -3,7 +3,7 @@
 import request from "request-promise";
 import parserUrl from "url";
 import robots from "robots";
-import blackList from "../../assets/blackList.json";
+import blackList from "../../assets/black_list.json";
 import { MAX_PAGES_TO_VISIT, HEADERS } from "../../assets/config.json";
 import logger from "./log";
 
@@ -13,6 +13,7 @@ export default class Crawler {
     this.numPagesVisited = 0;
     this.parser = parser;
     this.store = store;
+    this.baseUrl = "";
   }
 
   async crawl() {
@@ -41,11 +42,16 @@ export default class Crawler {
         continue;
 
       try {
-        if (this.canFetch(nextPage, HEADERS["User-Agent"]))
-          await this.visitPage(nextPage);
+        if (hostname !== this.baseUrl) {
+          this.isFetchable = this.canFetch(nextPage, HEADERS["User-Agent"]);
+          this.baseUrl = hostname;
+
+          logger.info(`\n************** ${hostname} ********************\n`);
+        }
+        if (this.isFetchable) await this.visitPage(nextPage);
       } catch (error) {
         if (error.name && error.statusCode)
-          logger.error("Error: " + error.name + " - " + error.statusCode);
+          logger.error(`Error: ${error.name} - ${error.statusCode}`);
       }
     }
 
@@ -72,10 +78,7 @@ export default class Crawler {
       this.parser.parse(html);
 
       logger.info(
-        "Visiting page n° " +
-          this.numPagesVisited +
-          ": " +
-          this.parser.getTitle()
+        `#${this.numPagesVisited}: ${this.parser.getTitle()} (${url})`
       );
 
       const links = this.parser.getLinks();
@@ -95,7 +98,7 @@ export default class Crawler {
     const { hostname, protocol } = parserUrl.parse(url);
 
     const parser = new robots.RobotsParser(
-      protocol + "//" + hostname + "/robots.txt"
+      `${protocol}//"${hostname}/robots.txt`
     );
 
     return parser.canFetchSync(userAgent, url);

@@ -1,22 +1,22 @@
-var assert = require("chai").assert;
-//var fs = require("fs");
-var Crawler = require("../src/lib/Crawler.js");
+import assert from "chai";
 
-var simpleAnchor = '<a href="http://www.google.com">Google</a>';
+import Crawler from "../src/lib/Crawler.js";
 
-var divInsideAnchor = `
+const simpleAnchor = '<a href="http://www.google.com">Google</a>';
+
+const divInsideAnchor = `
   <a href="http://www.google.com">
     <div>Ciaone</div>
   </a>`;
 
-var nestedDivsAnchor = `
+const nestedDivsAnchor = `
   <a href="http://www.google.com">
     <div>
       <div>Ciaone</div>
     </div>
   </a>`;
 
-var nestedMultipleDivAnchor = `
+const nestedMultipleDivAnchor = `
   <a href="http://www.google.com">
     <div>
       <div>Ciaone</div>
@@ -24,12 +24,12 @@ var nestedMultipleDivAnchor = `
     </div>
   </a>`;
 
-var imageAnchor = `
+const imageAnchor = `
   <a href="http://www.google.com">
     <img src="www.gogle.com/image.png"></img>
   </a>`;
 
-var nestedImageAnchor = `
+const nestedImageAnchor = `
   <a href="http://www.google.com">
     <div>
       <span>
@@ -38,23 +38,23 @@ var nestedImageAnchor = `
     </div>
   </a>`;
 
-var nestedAnchor = `
+const nestedAnchor = `
   <div>
     <span>
       <a href="http://www.google.com">Google</a>
     </span>
   </div>`;
 
-var h1InAnchor = `
+const h1InAnchor = `
   <a href="http://www.google.com">
     <h1>miao</h1>
   </a>`;
 
 describe("Crawler", function() {
-  var crawler = new Crawler();
+  const crawler = new Crawler();
 
   describe("parse simple anchor", function() {
-    var result = crawler.parse(simpleAnchor);
+    const result = crawler.crawl(simpleAnchor);
 
     it("return href", function() {
       assert.equal(result.anchors[0].href, "http://www.google.com");
@@ -66,7 +66,7 @@ describe("Crawler", function() {
   });
 
   describe("parse div inside anchor ", function() {
-    var result = crawler.parse(divInsideAnchor);
+    const result = crawler.parse(divInsideAnchor);
 
     it("return href", function() {
       assert.equal(result.anchors[0].href, "http://www.google.com");
@@ -78,7 +78,7 @@ describe("Crawler", function() {
   });
 
   describe("parse nested div", function() {
-    var result = crawler.parse(nestedDivsAnchor);
+    const result = crawler.parse(nestedDivsAnchor);
 
     it("return href", function() {
       assert.equal(result.anchors[0].href, "http://www.google.com");
@@ -90,7 +90,7 @@ describe("Crawler", function() {
   });
 
   describe("parse nested multiple div", function() {
-    var result = crawler.parse(nestedMultipleDivAnchor);
+    const result = crawler.parse(nestedMultipleDivAnchor);
 
     it("return href", function() {
       assert.equal(result.anchors[0].href, "http://www.google.com");
@@ -103,7 +103,7 @@ describe("Crawler", function() {
   });
 
   describe("parse images anchor", function() {
-    var result = crawler.parse(imageAnchor);
+    const result = crawler.parse(imageAnchor);
 
     it("return href", function() {
       assert.equal(result.anchors[0].href, "http://www.google.com");
@@ -115,7 +115,7 @@ describe("Crawler", function() {
   });
 
   describe("parse images anchor", function() {
-    var result = crawler.parse(nestedImageAnchor);
+    const result = crawler.parse(nestedImageAnchor);
 
     it("return href", function() {
       assert.equal(result.anchors[0].href, "http://www.google.com");
@@ -127,7 +127,7 @@ describe("Crawler", function() {
   });
 
   describe("nested anchor", function() {
-    var result = crawler.parse(nestedAnchor);
+    const result = crawler.parse(nestedAnchor);
 
     it("return href", function() {
       assert.equal(result.anchors[0].href, "http://www.google.com");
@@ -139,7 +139,7 @@ describe("Crawler", function() {
   });
 
   describe("h1 inside ", function() {
-    var result = crawler.parse(h1InAnchor);
+    const result = crawler.parse(h1InAnchor);
     it("return href", function() {
       assert.equal(result.anchors[0].href, "http://www.google.com");
     });
