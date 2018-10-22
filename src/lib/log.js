@@ -1,4 +1,5 @@
 import winston from "winston";
+const { combine, colorize } = winston.format;
 
 const logger = winston.createLogger({
   transports: [
@@ -8,6 +9,10 @@ const logger = winston.createLogger({
     }),
     new winston.transports.Console({
       level: "info",
+      format: combine(colorize(), winston.format.simple())
+    }),
+    new winston.transports.Console({
+      level: "warn",
       format: winston.format.simple()
     })
   ]

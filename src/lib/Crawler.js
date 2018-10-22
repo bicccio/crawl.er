@@ -9,46 +9,51 @@ import logger from "./log";
 
 export default class Crawler {
   constructor(parser, store) {
+    if (!(parser && store)) {
+      throw new Error("Store && Parameters are required");
+    }
     this.pagesVisited = {};
     this.numPagesVisited = 0;
     this.parser = parser;
     this.store = store;
     this.baseUrl = "";
+
+    this.isFetchable = false;
   }
 
   async crawl() {
-    if (!this.store) {
-      this.finish();
-    }
-
     while (this.store.length() > 0) {
       if (this.numPagesVisited >= MAX_PAGES_TO_VISIT) {
         logger.info("Max limit of number of pages reached");
         this.finish();
       }
 
-      const nextPage = this.store.shift();
-
-      if (!nextPage) {
+      const nextUrl = this.store.shift();
+      if (!nextUrl) {
+        logger.info("No more page to visit");
         this.finish();
       }
 
-      const hostname = parserUrl.parse(nextPage).hostname;
+      const cleanUrl = nextUrl.replace(/\/$/, "");
+
+      const { protocol, hostname } = parserUrl.parse(cleanUrl);
 
       if (
-        nextPage in this.pagesVisited ||
+        this.pagesVisited[cleanUrl] ||
         blackList.urls.indexOf(hostname) > -1
-      )
+      ) {
+        logger.warn(`${cleanUrl} visited or black listed`);
         continue;
+      }
 
       try {
         if (hostname !== this.baseUrl) {
-          this.isFetchable = this.canFetch(nextPage, HEADERS["User-Agent"]);
+          this.isFetchable = this.canFetch(cleanUrl, HEADERS["User-Agent"]);
           this.baseUrl = hostname;
-
-          logger.info(`\n************** ${hostname} ********************\n`);
+          this.protocol = protocol;
+          logger.info(`\n\n************** ${hostname} ********************\n`);
         }
-        if (this.isFetchable) await this.visitPage(nextPage);
+        if (this.isFetchable) await this.visitPage(cleanUrl);
       } catch (error) {
         if (error.name && error.statusCode)
           logger.error(`Error: ${error.name} - ${error.statusCode}`);
@@ -69,7 +74,8 @@ export default class Crawler {
 
     const options = {
       uri: url,
-      headers: HEADERS
+      headers: HEADERS,
+      timeout: 2000
     };
 
     try {
@@ -84,9 +90,17 @@ export default class Crawler {
       const links = this.parser.getLinks();
       if (links.length === 0) return;
 
-      links.forEach(url => {
-        if (url && url.indexOf("http") > -1) {
-          this.store.push(url);
+      links.forEach(link => {
+        if (!link) return;
+        const cleanUrl = link.replace(/\/$/, "");
+        if (cleanUrl.indexOf("http") > -1) {
+          this.store.push(cleanUrl);
+        } else {
+          const noLeadingSlashUrl = cleanUrl.replace(/^\/+/g, "");
+          //console.log(`${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`);
+          this.store.push(
+            `${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`
+          );
         }
       });
     } catch (error) {
