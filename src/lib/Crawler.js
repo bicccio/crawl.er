@@ -4,7 +4,11 @@ import request from "request-promise";
 import parserUrl from "url";
 import robots from "robots";
 import blackList from "../../assets/black_list.json";
-import { MAX_PAGES_TO_VISIT, HEADERS } from "../../assets/config.json";
+import {
+  MAX_PAGES_TO_VISIT,
+  HEADERS,
+  REQUEST_TIMEOUT
+} from "../../assets/config.json";
 import logger from "./log";
 
 export default class Crawler {
@@ -42,7 +46,7 @@ export default class Crawler {
         this.pagesVisited[cleanUrl] ||
         blackList.urls.indexOf(hostname) > -1
       ) {
-        logger.warn(`${cleanUrl} visited or black listed`);
+        //logger.warn(`${cleanUrl} visited or black listed`);
         continue;
       }
 
@@ -51,12 +55,14 @@ export default class Crawler {
           this.isFetchable = this.canFetch(cleanUrl, HEADERS["User-Agent"]);
           this.baseUrl = hostname;
           this.protocol = protocol;
-          logger.info(`\n\n************** ${hostname} ********************\n`);
+          //logger.info(`\n\n************** ${hostname} ********************\n`);
         }
         if (this.isFetchable) await this.visitPage(cleanUrl);
       } catch (error) {
-        if (error.name && error.statusCode)
-          logger.error(`Error: ${error.name} - ${error.statusCode}`);
+        // if (error.name && error.statusCode)
+        //   logger.error(
+        //     `Error visitind ${cleanUrl}: ${error.name} - ${error.statusCode}`
+        //   );
       }
     }
 
@@ -75,7 +81,7 @@ export default class Crawler {
     const options = {
       uri: url,
       headers: HEADERS,
-      timeout: 2000
+      timeout: REQUEST_TIMEOUT
     };
 
     try {
@@ -92,12 +98,13 @@ export default class Crawler {
 
       links.forEach(link => {
         if (!link) return;
+
         const cleanUrl = link.replace(/\/$/, "");
+
         if (cleanUrl.indexOf("http") > -1) {
           this.store.push(cleanUrl);
         } else {
           const noLeadingSlashUrl = cleanUrl.replace(/^\/+/g, "");
-          //console.log(`${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`);
           this.store.push(
             `${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`
           );

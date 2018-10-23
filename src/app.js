@@ -1,12 +1,14 @@
 import Crawler from "./lib/Crawler";
-import ArrayStore from "./lib/ArrayStore";
+import InMemoryStore from "./lib/InMemoryStore";
 import Parser from "./lib/Parser";
 import logger from "./lib/log";
-import { DEFAULT_URL } from "../assets/config.json";
+import { START_URLS } from "../assets/config.json";
 
-const url = process.argv[2] ? process.argv[2] : DEFAULT_URL;
+const urls = process.argv[2]
+  ? Array.prototype.concat([], process.argv[2])
+  : START_URLS;
 
-const crawler = new Crawler(new Parser(), new ArrayStore(url));
+const crawler = new Crawler(new Parser(), new InMemoryStore(urls));
 
 try {
   crawler.crawl();

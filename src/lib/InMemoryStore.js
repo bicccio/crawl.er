@@ -1,6 +1,6 @@
-export default class ArrayStore {
-  constructor(startUrl) {
-    this.pagesToVisit = startUrl ? [startUrl] : [];
+export default class InMemoryStore {
+  constructor(startUrls) {
+    this.pagesToVisit = startUrls || [];
   }
 
   push(page) {
