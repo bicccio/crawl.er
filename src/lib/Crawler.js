@@ -3,12 +3,12 @@
 import request from "request-promise";
 import parserUrl from "url";
 import robots from "robots";
-import blackList from "../../assets/black_list.json";
 import {
   MAX_PAGES_TO_VISIT,
   HEADERS,
-  REQUEST_TIMEOUT
-} from "../../assets/config.json";
+  REQUEST_TIMEOUT,
+  BLACKLIST
+} from "../../conf/config.json";
 import logger from "./log";
 
 export default class Crawler {
@@ -42,10 +42,7 @@ export default class Crawler {
 
       const { protocol, hostname } = parserUrl.parse(cleanUrl);
 
-      if (
-        this.pagesVisited[cleanUrl] ||
-        blackList.urls.indexOf(hostname) > -1
-      ) {
+      if (this.pagesVisited[cleanUrl] || BLACKLIST.indexOf(hostname) > -1) {
         //logger.warn(`${cleanUrl} visited or black listed`);
         continue;
       }
