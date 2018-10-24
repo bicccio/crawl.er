@@ -24,26 +24,31 @@ export default class Crawler {
 
   async crawl() {
     while (this.store.length() > 0) {
-      if (this.numPagesVisited >= MAX_PAGES_TO_VISIT) {
-        logger.info("Max limit of number of pages reached");
-        this.finish();
-      }
-
-      let nextUrl = this.store.shift();
-      if (!nextUrl) {
-        logger.info("No more page to visit");
-        this.finish();
-      }
-
-      const cleanUrl = nextUrl.replace(/\/$/, "");
-
-      const { protocol, hostname } = parserUrl.parse(cleanUrl);
-
-      if (this.pagesVisited[cleanUrl] || BLACKLIST.indexOf(hostname) > -1) {
-        continue;
-      }
-
       try {
+        if (this.numPagesVisited >= MAX_PAGES_TO_VISIT) {
+          logger.info("Max limit of number of pages reached");
+          this.finish();
+        }
+
+        let nextUrl = this.store.shift();
+        if (!nextUrl) {
+          logger.info("No more page to visit");
+          this.finish();
+        }
+
+        const cleanUrl = nextUrl.replace(/\/$/, "");
+
+        const { protocol, hostname } = parserUrl.parse(cleanUrl);
+
+        const isVisited = await this.db.find({ url: cleanUrl, visited: true });
+        if (isVisited && isVisited.length > 0) {
+          continue;
+        }
+
+        if (BLACKLIST.indexOf(hostname) > -1) {
+          continue;
+        }
+
         if (hostname !== this.baseUrl) {
           this.isFetchable = this.canFetch(cleanUrl, HEADERS["User-Agent"]);
           this.baseUrl = hostname;
@@ -54,7 +59,7 @@ export default class Crawler {
 
         await this.visitPage(cleanUrl);
       } catch (error) {
-        throw error;
+        //throw error;
       }
     }
 
@@ -80,7 +85,7 @@ export default class Crawler {
       this.numPagesVisited++;
 
       logger.info(`#${this.numPagesVisited}: ${title} (${url})`);
-      this.db.insert({ url: url, title: title });
+      this.db.insert({ url: url, title: title, visited: true });
 
       const links = this.parser.getLinks();
       if (links.length === 0) return;
@@ -94,11 +99,13 @@ export default class Crawler {
           this.store.push(cleanUrl);
         } else {
           const noLeadingSlashUrl = cleanUrl.replace(/^\/+/g, "");
+
           this.store.push(`${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`);
+          this.db.insert({ url: `${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`, visited: false, title: "" });
         }
       });
     } catch (error) {
-      cra;
+      throw error;
     }
   }
 
