@@ -2,13 +2,9 @@
 
 import request from "request-promise";
 import parserUrl from "url";
+import Datastore from "nedb-promises";
 import robots from "robots";
-import {
-  MAX_PAGES_TO_VISIT,
-  HEADERS,
-  REQUEST_TIMEOUT,
-  BLACKLIST
-} from "../../conf/config.json";
+import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST } from "../../conf/config.json";
 import logger from "./log";
 
 export default class Crawler {
@@ -23,6 +19,7 @@ export default class Crawler {
     this.baseUrl = "";
 
     this.isFetchable = false;
+    this.db = new Datastore({ filename: "./db" });
   }
 
   async crawl() {
@@ -32,7 +29,7 @@ export default class Crawler {
         this.finish();
       }
 
-      const nextUrl = this.store.shift();
+      let nextUrl = this.store.shift();
       if (!nextUrl) {
         logger.info("No more page to visit");
         this.finish();
@@ -43,7 +40,6 @@ export default class Crawler {
       const { protocol, hostname } = parserUrl.parse(cleanUrl);
 
       if (this.pagesVisited[cleanUrl] || BLACKLIST.indexOf(hostname) > -1) {
-        //logger.warn(`${cleanUrl} visited or black listed`);
         continue;
       }
 
@@ -52,14 +48,13 @@ export default class Crawler {
           this.isFetchable = this.canFetch(cleanUrl, HEADERS["User-Agent"]);
           this.baseUrl = hostname;
           this.protocol = protocol;
-          //logger.info(`\n\n************** ${hostname} ********************\n`);
         }
-        if (this.isFetchable) await this.visitPage(cleanUrl);
+
+        if (!this.isFetchable) continue;
+
+        await this.visitPage(cleanUrl);
       } catch (error) {
-        // if (error.name && error.statusCode)
-        //   logger.error(
-        //     `Error visitind ${cleanUrl}: ${error.name} - ${error.statusCode}`
-        //   );
+        throw error;
       }
     }
 
@@ -72,23 +67,20 @@ export default class Crawler {
   }
 
   async visitPage(url) {
-    this.pagesVisited[url] = true;
-    this.numPagesVisited++;
-
-    const options = {
-      uri: url,
-      headers: HEADERS,
-      timeout: REQUEST_TIMEOUT
-    };
-
     try {
-      const html = await request(options);
+      const html = await request({
+        uri: url,
+        headers: HEADERS,
+        timeout: REQUEST_TIMEOUT
+      });
 
       this.parser.parse(html);
 
-      logger.info(
-        `#${this.numPagesVisited}: ${this.parser.getTitle()} (${url})`
-      );
+      const title = this.parser.getTitle();
+      this.numPagesVisited++;
+
+      logger.info(`#${this.numPagesVisited}: ${title} (${url})`);
+      this.db.insert({ url: url, title: title });
 
       const links = this.parser.getLinks();
       if (links.length === 0) return;
@@ -102,22 +94,18 @@ export default class Crawler {
           this.store.push(cleanUrl);
         } else {
           const noLeadingSlashUrl = cleanUrl.replace(/^\/+/g, "");
-          this.store.push(
-            `${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`
-          );
+          this.store.push(`${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`);
         }
       });
     } catch (error) {
-      throw error;
+      cra;
     }
   }
 
   canFetch(url, userAgent) {
     const { hostname, protocol } = parserUrl.parse(url);
 
-    const parser = new robots.RobotsParser(
-      `${protocol}//"${hostname}/robots.txt`
-    );
+    const parser = new robots.RobotsParser(`${protocol}//"${hostname}/robots.txt`);
 
     return parser.canFetchSync(userAgent, url);
   }
