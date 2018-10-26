@@ -4,9 +4,13 @@ import request from "request-promise";
 import parserUrl from "url";
 import Datastore from "nedb-promises";
 import robots from "robots";
-import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST } from "../../conf/config.json";
+import {
+  MAX_PAGES_TO_VISIT,
+  HEADERS,
+  REQUEST_TIMEOUT,
+  BLACKLIST
+} from "../../conf/config.json";
 import logger from "./log";
-
 export default class Crawler {
   constructor(parser, store) {
     if (!(parser && store)) {
@@ -90,7 +94,7 @@ export default class Crawler {
       const links = this.parser.getLinks();
       if (links.length === 0) return;
 
-      links.forEach(link => {
+      links.forEach(async link => {
         if (!link) return;
 
         const cleanUrl = link.replace(/\/$/, "");
@@ -100,8 +104,22 @@ export default class Crawler {
         } else {
           const noLeadingSlashUrl = cleanUrl.replace(/^\/+/g, "");
 
-          this.store.push(`${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`);
-          this.db.insert({ url: `${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`, visited: false, title: "" });
+          const completeUrl = `${this.protocol}//${
+            this.baseUrl
+          }/${noLeadingSlashUrl}`;
+
+          this.store.push(completeUrl);
+
+          const visited = await this.db.find({
+            url: completeUrl
+          });
+
+          visited.length > 0 &&
+            this.db.insert({
+              url: completeUrl,
+              visited: false,
+              title: ""
+            });
         }
       });
     } catch (error) {
@@ -112,7 +130,9 @@ export default class Crawler {
   canFetch(url, userAgent) {
     const { hostname, protocol } = parserUrl.parse(url);
 
-    const parser = new robots.RobotsParser(`${protocol}//"${hostname}/robots.txt`);
+    const parser = new robots.RobotsParser(
+      `${protocol}//"${hostname}/robots.txt`
+    );
 
     return parser.canFetchSync(userAgent, url);
   }
