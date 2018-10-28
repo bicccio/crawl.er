@@ -11,6 +11,7 @@ import {
   BLACKLIST
 } from "../../conf/config.json";
 import logger from "./log";
+
 export default class Crawler {
   constructor(parser, store) {
     if (!(parser && store)) {
@@ -88,8 +89,8 @@ export default class Crawler {
       const title = this.parser.getTitle();
       this.numPagesVisited++;
 
-      logger.info(`#${this.numPagesVisited}: ${title} (${url})`);
-      this.db.insert({ url: url, title: title, visited: true });
+      logger.info(`#${this.numPagesVisited}: ${url} - ${title}`);
+      this.db.update({ url: url }, { url: url, title: title, visited: true });
 
       const links = this.parser.getLinks();
       if (links.length === 0) return;
@@ -98,28 +99,28 @@ export default class Crawler {
         if (!link) return;
 
         const cleanUrl = link.replace(/\/$/, "");
-
+        let completeUrl = "";
         if (cleanUrl.indexOf("http") > -1) {
-          this.store.push(cleanUrl);
+          completeUrl = cleanUrl;
         } else {
           const noLeadingSlashUrl = cleanUrl.replace(/^\/+/g, "");
-
-          const completeUrl = `${this.protocol}//${
+          completeUrl = `${this.protocol}//${
             this.baseUrl
           }/${noLeadingSlashUrl}`;
+        }
 
-          this.store.push(completeUrl);
+        this.store.push(completeUrl);
 
-          const visited = await this.db.find({
+        if (
+          await this.db.find({
             url: completeUrl
+          })
+        ) {
+          this.db.insert({
+            url: completeUrl,
+            visited: false,
+            title: ""
           });
-
-          visited.length > 0 &&
-            this.db.insert({
-              url: completeUrl,
-              visited: false,
-              title: ""
-            });
         }
       });
     } catch (error) {
