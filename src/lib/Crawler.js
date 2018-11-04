@@ -111,11 +111,11 @@ export default class Crawler {
 
         this.store.push(completeUrl);
 
-        if (
-          await this.db.find({
-            url: completeUrl
-          })
-        ) {
+        const res = await this.db.find({
+          url: completeUrl
+        });
+
+        if (res && res.length === 0) {
           this.db.insert({
             url: completeUrl,
             visited: false,
