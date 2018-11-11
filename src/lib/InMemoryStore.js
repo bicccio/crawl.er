@@ -3,8 +3,9 @@ export default class InMemoryStore {
     this.pagesToVisit = startUrls || [];
   }
 
-  push(page) {
-    this.pagesToVisit.push(page);
+  push(url) {
+    if (!url) return;
+    this.pagesToVisit.push(url);
   }
 
   shift() {

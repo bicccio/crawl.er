@@ -1,5 +1,3 @@
-"use strict";
-
 import cheerio from "cheerio";
 let $ = {};
 

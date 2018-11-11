@@ -2,6 +2,7 @@
 
 import request from "request-promise";
 import parserUrl from "url";
+import Datastore from "nedb-promises";
 import robots from "robots";
 import {
   MAX_PAGES_TO_VISIT,
@@ -23,43 +24,47 @@ export default class Crawler {
     this.baseUrl = "";
 
     this.isFetchable = false;
+    this.db = new Datastore({ filename: "./db" });
   }
 
   async crawl() {
     while (this.store.length() > 0) {
-      if (this.numPagesVisited >= MAX_PAGES_TO_VISIT) {
-        logger.info("Max limit of number of pages reached");
-        this.finish();
-      }
-
-      const nextUrl = this.store.shift();
-      if (!nextUrl) {
-        logger.info("No more page to visit");
-        this.finish();
-      }
-
-      const cleanUrl = nextUrl.replace(/\/$/, "");
-
-      const { protocol, hostname } = parserUrl.parse(cleanUrl);
-
-      if (this.pagesVisited[cleanUrl] || BLACKLIST.indexOf(hostname) > -1) {
-        //logger.warn(`${cleanUrl} visited or black listed`);
-        continue;
-      }
-
       try {
+        if (this.numPagesVisited >= MAX_PAGES_TO_VISIT) {
+          logger.info("Max limit of number of pages reached");
+          this.finish();
+        }
+
+        let nextUrl = this.store.shift();
+        if (!nextUrl) {
+          logger.info("No more page to visit");
+          this.finish();
+        }
+
+        const cleanUrl = nextUrl.replace(/\/$/, "");
+
+        const { protocol, hostname } = parserUrl.parse(cleanUrl);
+
+        const isVisited = await this.db.find({ url: cleanUrl, visited: true });
+        if (isVisited && isVisited.length > 0) {
+          continue;
+        }
+
+        if (BLACKLIST.indexOf(hostname) > -1) {
+          continue;
+        }
+
         if (hostname !== this.baseUrl) {
           this.isFetchable = this.canFetch(cleanUrl, HEADERS["User-Agent"]);
           this.baseUrl = hostname;
           this.protocol = protocol;
-          //logger.info(`\n\n************** ${hostname} ********************\n`);
         }
-        if (this.isFetchable) await this.visitPage(cleanUrl);
+
+        if (!this.isFetchable) continue;
+
+        await this.visitPage(cleanUrl);
       } catch (error) {
-        // if (error.name && error.statusCode)
-        //   logger.error(
-        //     `Error visitind ${cleanUrl}: ${error.name} - ${error.statusCode}`
-        //   );
+        //throw error;
       }
     }
 
@@ -72,39 +77,50 @@ export default class Crawler {
   }
 
   async visitPage(url) {
-    this.pagesVisited[url] = true;
-    this.numPagesVisited++;
-
-    const options = {
-      uri: url,
-      headers: HEADERS,
-      timeout: REQUEST_TIMEOUT
-    };
-
     try {
-      const html = await request(options);
+      const html = await request({
+        uri: url,
+        headers: HEADERS,
+        timeout: REQUEST_TIMEOUT
+      });
 
       this.parser.parse(html);
 
-      logger.info(
-        `#${this.numPagesVisited}: ${this.parser.getTitle()} (${url})`
-      );
+      const title = this.parser.getTitle();
+      this.numPagesVisited++;
+
+      logger.info(`#${this.numPagesVisited}: ${url} - ${title}`);
+      this.db.update({ url: url }, { url: url, title: title, visited: true });
 
       const links = this.parser.getLinks();
       if (links.length === 0) return;
 
-      links.forEach(link => {
+      links.forEach(async link => {
         if (!link) return;
 
         const cleanUrl = link.replace(/\/$/, "");
-
+        let completeUrl = "";
         if (cleanUrl.indexOf("http") > -1) {
-          this.store.push(cleanUrl);
+          completeUrl = cleanUrl;
         } else {
           const noLeadingSlashUrl = cleanUrl.replace(/^\/+/g, "");
-          this.store.push(
-            `${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`
-          );
+          completeUrl = `${this.protocol}//${
+            this.baseUrl
+          }/${noLeadingSlashUrl}`;
+        }
+
+        this.store.push(completeUrl);
+
+        const res = await this.db.find({
+          url: completeUrl
+        });
+
+        if (res && res.length === 0) {
+          this.db.insert({
+            url: completeUrl,
+            visited: false,
+            title: ""
+          });
         }
       });
     } catch (error) {

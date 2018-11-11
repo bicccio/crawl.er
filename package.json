@@ -13,7 +13,7 @@
   "dependencies": {
     "cheerio": "^0.20.0",
     "htmlparser2": "^3.9.2",
-    "netdb": "^2017.3.17",
+    "nedb-promises": "^3.0.2",
     "request": "^2.73.0",
     "request-promise": "^4.2.2",
     "robots": "^0.10.1",
