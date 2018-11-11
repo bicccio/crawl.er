@@ -18,3 +18,5 @@ config.json
 black_list.json
 
 log
+
+db
