@@ -59,7 +59,7 @@ export default class Crawler {
 
         await this.visitPage(cleanUrl);
       } catch (error) {
-        //throw error;
+        logger.error(error);
       }
     }
 
@@ -91,7 +91,7 @@ export default class Crawler {
       const links = this.parser.getLinks();
       if (links.length === 0) return;
 
-      links.forEach(async link => {
+      for (const link of links) {
         if (!link) return;
 
         const cleanUrl = link.replace(/\/$/, "");
@@ -110,13 +110,13 @@ export default class Crawler {
         });
 
         if (res && res.length === 0) {
-          this.db.insert({
+          await this.db.insert({
             url: completeUrl,
             visited: false,
             title: ""
           });
         }
-      });
+      }
     } catch (error) {
       throw error;
     }
