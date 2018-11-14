@@ -2,48 +2,50 @@
 
 import request from "request-promise";
 import parserUrl from "url";
-import Datastore from "nedb-promises";
 import robots from "robots";
 import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST } from "../../conf/config.json";
 import logger from "./log";
 
 export default class Crawler {
-  constructor(parser, store) {
-    if (!(parser && store)) {
-      throw new Error("Store && Parameters are required");
+  constructor(parser, db) {
+    if (!(parser && db)) {
+      throw new Error("db && Parameters are required");
     }
     this.pagesVisited = {};
     this.numPagesVisited = 0;
     this.parser = parser;
-    this.store = store;
     this.baseUrl = "";
 
     this.isFetchable = false;
-    this.db = new Datastore({ filename: "./db" });
+    this.db = db;
+    this.currentUrl;
   }
 
   async crawl() {
-    while (this.store.length() > 0) {
+    while (true) {
       try {
         if (this.numPagesVisited >= MAX_PAGES_TO_VISIT) {
           logger.info("Max limit of number of pages reached");
           this.finish();
         }
 
-        let nextUrl = this.store.shift();
-        if (!nextUrl) {
+        this.currentUrl = await this.db.findOne({ visited: false });
+
+        if (!this.currentUrl) {
           logger.info("No more page to visit");
           this.finish();
         }
+
+        const nextUrl = this.currentUrl.url;
 
         const cleanUrl = nextUrl.replace(/\/$/, "");
 
         const { protocol, hostname } = parserUrl.parse(cleanUrl);
 
-        const isVisited = await this.db.find({ url: cleanUrl, visited: true });
-        if (isVisited && isVisited.length > 0) {
-          continue;
-        }
+        // const isVisited = await this.db.find({ url: cleanUrl, visited: true });
+        // if (isVisited && isVisited.length > 0) {
+        //   continue;
+        // }
 
         if (BLACKLIST.indexOf(hostname) > -1) {
           continue;
@@ -59,11 +61,12 @@ export default class Crawler {
 
         await this.visitPage(cleanUrl);
       } catch (error) {
+        logger.error(this.currentUrl.url);
         logger.error(error);
       }
     }
 
-    this.finish();
+    //this.finish();
   }
 
   async visitPage(url) {
@@ -81,7 +84,7 @@ export default class Crawler {
 
       logger.info(`#${this.numPagesVisited}: ${url} - ${title}`);
 
-      await this.db.update({ url: url }, { url: url, title: title, visited: true }, { upsert: true });
+      await this.db.update({ url: url }, { url: url, title: title, visited: true }, {});
 
       if (links.length === 0) return;
 
@@ -97,17 +100,18 @@ export default class Crawler {
           completeUrl = `${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`;
         }
 
-        this.store.push(completeUrl);
+        //this.store.push(completeUrl);
 
         const res = await this.db.find({
           url: completeUrl
         });
 
         if (res && res.length === 0) {
+          // check for blacklist and allowed domains
           await this.db.insert({
             url: completeUrl,
-            visited: false,
-            title: ""
+            title: "",
+            visited: false
           });
         }
       }

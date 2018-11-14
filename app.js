@@ -1,3 +1,6 @@
-import crawler from "./src/crawler";
+import init from "./src/crawler";
 
-crawler.crawl();
+(async function start() {
+  const crawler = await init();
+  crawler.crawl();
+})();
