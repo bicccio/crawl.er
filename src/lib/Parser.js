@@ -6,6 +6,13 @@ export default class Parser {
     $ = cheerio.load(html);
   }
 
+  getElements() {
+    return {
+      title: this.getTitle(),
+      links: this.getLinks()
+    };
+  }
+
   getTitle() {
     return $("title").text();
   }
