@@ -66,11 +66,6 @@ export default class Crawler {
     this.finish();
   }
 
-  finish() {
-    logger.info("************** Finish ********************");
-    process.exit();
-  }
-
   async visitPage(url) {
     try {
       const html = await request({
@@ -81,14 +76,13 @@ export default class Crawler {
 
       this.parser.parse(html);
 
-      const title = this.parser.getTitle();
+      const { title, links } = this.parser.getElements();
       this.numPagesVisited++;
 
       logger.info(`#${this.numPagesVisited}: ${url} - ${title}`);
 
       await this.db.update({ url: url }, { url: url, title: title, visited: true }, { upsert: true });
 
-      const links = this.parser.getLinks();
       if (links.length === 0) return;
 
       for (const link of links) {
@@ -128,5 +122,10 @@ export default class Crawler {
     const parser = new robots.RobotsParser(`${protocol}//"${hostname}/robots.txt`);
 
     return parser.canFetchSync(userAgent, url);
+  }
+
+  finish() {
+    logger.info("************** Finish ********************");
+    process.exit();
   }
 }
