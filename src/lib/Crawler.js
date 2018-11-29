@@ -3,7 +3,12 @@
 import request from "request-promise";
 import parserUrl from "url";
 import robots from "robots";
-import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST } from "../../conf/config.json";
+import {
+  MAX_PAGES_TO_VISIT,
+  HEADERS,
+  REQUEST_TIMEOUT,
+  BLACKLIST
+} from "../../conf/config.json";
 import logger from "./log";
 
 export default class Crawler {
@@ -65,8 +70,6 @@ export default class Crawler {
         logger.error(error);
       }
     }
-
-    //this.finish();
   }
 
   async visitPage(url) {
@@ -84,7 +87,11 @@ export default class Crawler {
 
       logger.info(`#${this.numPagesVisited}: ${url} - ${title}`);
 
-      await this.db.update({ url: url }, { url: url, title: title, visited: true }, {});
+      await this.db.update(
+        { url: url },
+        { url: url, title: title, visited: true },
+        {}
+      );
 
       if (links.length === 0) return;
 
@@ -97,7 +104,9 @@ export default class Crawler {
           completeUrl = cleanUrl;
         } else {
           const noLeadingSlashUrl = cleanUrl.replace(/^\/+/g, "");
-          completeUrl = `${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`;
+          completeUrl = `${this.protocol}//${
+            this.baseUrl
+          }/${noLeadingSlashUrl}`;
         }
 
         //this.store.push(completeUrl);
@@ -108,6 +117,8 @@ export default class Crawler {
 
         if (res && res.length === 0) {
           // check for blacklist and allowed domains
+          const { hostname } = parserUrl.parse(completeUrl);
+          if(this.isBlackListed(hostname)) continue
           await this.db.insert({
             url: completeUrl,
             title: "",
@@ -123,9 +134,17 @@ export default class Crawler {
   canFetch(url, userAgent) {
     const { hostname, protocol } = parserUrl.parse(url);
 
-    const parser = new robots.RobotsParser(`${protocol}//"${hostname}/robots.txt`);
+    const parser = new robots.RobotsParser(
+      `${protocol}//"${hostname}/robots.txt`
+    );
 
     return parser.canFetchSync(userAgent, url);
+  }
+
+  isBlackListed(hostname) {
+    if (BLACKLIST.indexOf(hostname) > -1) {
+      continue;
+    }
   }
 
   finish() {
