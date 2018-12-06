@@ -3,7 +3,7 @@
 import request from "request-promise";
 import parserUrl from "url";
 import robots from "robots";
-import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST } from "../../conf/config.json";
+import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../conf/config.json";
 import logger from "./log";
 
 export default class Crawler {
@@ -60,6 +60,8 @@ export default class Crawler {
         if (!this.isFetchable) continue;
 
         await this.visitPage(cleanUrl);
+
+        SLEEP > 0 && (await this.sleep(SLEEP));
       } catch (error) {
         logger.error(this.currentUrl.url);
 
@@ -92,16 +94,17 @@ export default class Crawler {
       for (const link of links) {
         if (!link) return;
 
-        const cleanUrl = link.replace(/\/$/, "");
+        const cleanUrl = link.replace(/\/$/, "").replace(/..\//, "");
         let completeUrl = "";
+        const searchPattern = new RegExp("^//");
         if (cleanUrl.indexOf("http") > -1) {
           completeUrl = cleanUrl;
         } else {
           const noLeadingSlashUrl = cleanUrl.replace(/^\/+/g, "");
-          completeUrl = `${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`;
+          completeUrl = searchPattern.test(cleanUrl)
+            ? (completeUrl = `${this.protocol}//${noLeadingSlashUrl}`)
+            : (completeUrl = `${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`);
         }
-
-        //this.store.push(completeUrl);
 
         const res = await this.db.find({
           url: completeUrl
@@ -140,5 +143,11 @@ export default class Crawler {
   finish() {
     logger.info("************** Finish ********************");
     process.exit();
+  }
+
+  sleep(ms) {
+    return new Promise(resolve => {
+      setTimeout(resolve, ms);
+    });
   }
 }

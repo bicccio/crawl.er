@@ -10,7 +10,9 @@
       "name": "Debug",
       "program": "${workspaceFolder}/app.js",
       "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/babel-node",
-      "runtimeArgs": ["--nolazy"]
+      "runtimeArgs": ["--nolazy"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
     }
   ]
 }
