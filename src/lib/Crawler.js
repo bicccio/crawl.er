@@ -6,43 +6,38 @@ import robots from "robots";
 import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../conf/config.json";
 import logger from "./log";
 
-export default class Crawler {
-  constructor(parser, db) {
-    if (!(parser && db)) {
-      throw new Error("db && Parameters are required");
-    }
-    this.pagesVisited = {};
-    this.numPagesVisited = 0;
-    this.parser = parser;
-    this.baseUrl = "";
-
-    this.isFetchable = false;
-    this.db = db;
-    this.currentUrl;
+export default (parser, db) => {
+  if (!(parser && db)) {
+    throw new Error("db && Parameters are required");
   }
 
-  async crawl() {
+  let numPagesVisited = 0,
+    baseUrl = "",
+    isFetchable = false,
+    currentUrl,
+    protocol,
+    hostname;
+
+  const crawl = async () => {
     while (true) {
       try {
-        if (this.numPagesVisited >= MAX_PAGES_TO_VISIT) {
+        if (numPagesVisited >= MAX_PAGES_TO_VISIT) {
           logger.info("Max limit of number of pages reached");
-          this.finish();
+          finish();
         }
 
-        this.currentUrl = await this.db.findOne({ visited: false });
+        currentUrl = await db.findOne({ visited: false });
 
-        if (!this.currentUrl) {
+        if (!currentUrl) {
           logger.info("No more page to visit");
-          this.finish();
+          finish();
         }
 
-        const nextUrl = this.currentUrl.url;
+        const cleanUrl = currentUrl.url.replace(/\/$/, "");
 
-        const cleanUrl = nextUrl.replace(/\/$/, "");
+        ({ protocol, hostname } = parserUrl.parse(cleanUrl));
 
-        const { protocol, hostname } = parserUrl.parse(cleanUrl);
-
-        const isVisited = await this.db.find({ url: cleanUrl, visited: true });
+        const isVisited = await db.find({ url: cleanUrl, visited: true });
         if (isVisited && isVisited.length > 0) {
           continue;
         }
@@ -51,28 +46,27 @@ export default class Crawler {
           continue;
         }
 
-        if (hostname !== this.baseUrl) {
-          this.isFetchable = this.canFetch(cleanUrl, HEADERS["User-Agent"]);
-          this.baseUrl = hostname;
-          this.protocol = protocol;
+        if (hostname !== baseUrl) {
+          isFetchable = canFetch(cleanUrl, HEADERS["User-Agent"]);
+          baseUrl = hostname;
         }
 
-        if (!this.isFetchable) continue;
+        if (!isFetchable) continue;
 
-        await this.visitPage(cleanUrl);
+        await visitPage(cleanUrl);
 
-        SLEEP > 0 && (await this.sleep(SLEEP));
+        SLEEP > 0 && (await sleep(SLEEP));
       } catch (error) {
-        logger.error(this.currentUrl.url);
+        logger.error(currentUrl.url);
 
-        await this.db.update({ url: this.currentUrl.url }, { url: this.currentUrl.url, title: "", visited: true }, {});
+        await db.update({ url: currentUrl.url }, { url: currentUrl.url, title: "", visited: true }, {});
 
         logger.error(error);
       }
     }
-  }
+  };
 
-  async visitPage(url) {
+  const visitPage = async url => {
     try {
       const html = await request({
         uri: url,
@@ -80,21 +74,21 @@ export default class Crawler {
         timeout: REQUEST_TIMEOUT
       });
 
-      this.parser.parse(html);
+      parser.parse(html);
 
-      const { title, links } = this.parser.getElements();
-      this.numPagesVisited++;
+      const { title, links } = parser.getElements();
+      numPagesVisited++;
 
-      logger.info(`#${this.numPagesVisited}: ${url} - ${title}`);
+      logger.info(`#${numPagesVisited}: ${url} - ${title}`);
 
-      await this.db.update({ url: url }, { url: url, title: title, visited: true }, {});
+      await db.update({ url: url }, { url: url, title: title, visited: true }, {});
 
       if (links.length === 0) return;
 
       for (const link of links) {
         if (!link) return;
 
-        const cleanUrl = link.replace(/\/$/, "").replace(/..\//, "");
+        const cleanUrl = link.replace(/\/$/, "");
         let completeUrl = "";
         const searchPattern = new RegExp("^//");
         if (cleanUrl.indexOf("http") > -1) {
@@ -102,11 +96,11 @@ export default class Crawler {
         } else {
           const noLeadingSlashUrl = cleanUrl.replace(/^\/+/g, "");
           completeUrl = searchPattern.test(cleanUrl)
-            ? (completeUrl = `${this.protocol}//${noLeadingSlashUrl}`)
-            : (completeUrl = `${this.protocol}//${this.baseUrl}/${noLeadingSlashUrl}`);
+            ? (completeUrl = `${protocol}//${noLeadingSlashUrl}`)
+            : (completeUrl = `${protocol}//${baseUrl}/${noLeadingSlashUrl}`);
         }
 
-        const res = await this.db.find({
+        const res = await db.find({
           url: completeUrl
         });
 
@@ -114,9 +108,9 @@ export default class Crawler {
           // check for blacklist and allowed domains
           const { hostname } = parserUrl.parse(completeUrl);
 
-          if (this.isBlackListed(hostname)) continue;
+          if (isBlackListed(hostname)) continue;
 
-          await this.db.insert({
+          await db.insert({
             url: completeUrl,
             title: "",
             visited: false
@@ -126,28 +120,32 @@ export default class Crawler {
     } catch (error) {
       throw error;
     }
-  }
+  };
 
-  canFetch(url, userAgent) {
+  const canFetch = (url, userAgent) => {
     const { hostname, protocol } = parserUrl.parse(url);
 
     const parser = new robots.RobotsParser(`${protocol}//${hostname}/robots.txt`);
 
     return parser.canFetchSync(userAgent, url);
-  }
+  };
 
-  isBlackListed(hostname) {
+  const isBlackListed = hostname => {
     return BLACKLIST.indexOf(hostname) > -1;
-  }
+  };
 
-  finish() {
+  const finish = () => {
     logger.info("************** Finish ********************");
     process.exit();
-  }
+  };
 
-  sleep(ms) {
+  const sleep = ms => {
     return new Promise(resolve => {
       setTimeout(resolve, ms);
     });
-  }
-}
+  };
+
+  return {
+    crawl
+  };
+};
