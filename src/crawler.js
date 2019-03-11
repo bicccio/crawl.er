@@ -1,6 +1,7 @@
 import Parser from "./lib/Parser";
+import parserUrl from "url";
 import Crawler from "./lib/Crawler";
-import { START_URLS } from "../conf/config.json";
+import { START_URLS, BLACKLIST } from "../conf/config.json";
 import Datastore from "nedb-promises";
 
 export default async function init() {
@@ -17,7 +18,8 @@ export default async function init() {
       });
 
       if (res && res.length === 0) {
-        // check for blacklist and allowed domains
+        ({ protocol, hostname } = parserUrl.parse(cleanUrl));
+        if (BLACKLIST.indexOf(hostname) > -1) return;
         await db.insert({
           url: url,
           title: "",

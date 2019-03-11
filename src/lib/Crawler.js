@@ -1,14 +1,18 @@
-"use strict";
-
 import request from "request-promise";
 import parserUrl from "url";
 import robots from "robots";
-import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../conf/config.json";
+import {
+  MAX_PAGES_TO_VISIT,
+  HEADERS,
+  REQUEST_TIMEOUT,
+  BLACKLIST,
+  SLEEP
+} from "../../conf/config.json";
 import logger from "./log";
 
 export default (parser, db) => {
   if (!(parser && db)) {
-    throw new Error("db && Parameters are required");
+    throw new Error("db && Parser are required");
   }
 
   let numPagesVisited = 0,
@@ -37,21 +41,13 @@ export default (parser, db) => {
 
         ({ protocol, hostname } = parserUrl.parse(cleanUrl));
 
-        const isVisited = await db.find({ url: cleanUrl, visited: true });
-        if (isVisited && isVisited.length > 0) {
-          continue;
-        }
-
-        if (BLACKLIST.indexOf(hostname) > -1) {
-          continue;
-        }
+        if (isBlackListed(hostname)) continue;
 
         if (hostname !== baseUrl) {
           isFetchable = canFetch(cleanUrl, HEADERS["User-Agent"]);
+          if (!isFetchable) continue;
           baseUrl = hostname;
         }
-
-        if (!isFetchable) continue;
 
         await visitPage(cleanUrl);
 
@@ -59,7 +55,11 @@ export default (parser, db) => {
       } catch (error) {
         logger.error(currentUrl.url);
 
-        await db.update({ url: currentUrl.url }, { url: currentUrl.url, title: "", visited: true }, {});
+        await db.update(
+          { url: currentUrl.url },
+          { url: currentUrl.url, title: "", visited: true },
+          {}
+        );
 
         logger.error(error);
       }
@@ -81,7 +81,11 @@ export default (parser, db) => {
 
       logger.info(`#${numPagesVisited}: ${url} - ${title}`);
 
-      await db.update({ url: url }, { url: url, title: title, visited: true }, {});
+      await db.update(
+        { url: url },
+        { url: url, title: title, visited: true },
+        {}
+      );
 
       if (links.length === 0) return;
 
@@ -90,11 +94,12 @@ export default (parser, db) => {
 
         const cleanUrl = link.replace(/\/$/, "");
         let completeUrl = "";
-        const searchPattern = new RegExp("^//");
+
         if (cleanUrl.indexOf("http") > -1) {
           completeUrl = cleanUrl;
         } else {
           const noLeadingSlashUrl = cleanUrl.replace(/^\/+/g, "");
+          const searchPattern = new RegExp("^//");
           completeUrl = searchPattern.test(cleanUrl)
             ? (completeUrl = `${protocol}//${noLeadingSlashUrl}`)
             : (completeUrl = `${protocol}//${baseUrl}/${noLeadingSlashUrl}`);
@@ -105,7 +110,6 @@ export default (parser, db) => {
         });
 
         if (res && res.length === 0) {
-          // check for blacklist and allowed domains
           const { hostname } = parserUrl.parse(completeUrl);
 
           if (isBlackListed(hostname)) continue;
@@ -125,7 +129,9 @@ export default (parser, db) => {
   const canFetch = (url, userAgent) => {
     const { hostname, protocol } = parserUrl.parse(url);
 
-    const parser = new robots.RobotsParser(`${protocol}//${hostname}/robots.txt`);
+    const parser = new robots.RobotsParser(
+      `${protocol}//${hostname}/robots.txt`
+    );
 
     return parser.canFetchSync(userAgent, url);
   };
