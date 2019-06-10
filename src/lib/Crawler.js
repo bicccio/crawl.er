@@ -1,18 +1,12 @@
 import request from "request-promise";
 import parserUrl from "url";
 import robots from "robots";
-import {
-  MAX_PAGES_TO_VISIT,
-  HEADERS,
-  REQUEST_TIMEOUT,
-  BLACKLIST,
-  SLEEP
-} from "../../conf/config.json";
+import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../conf/config.json";
 import logger from "./log";
 
-export default (parser, db) => {
-  if (!(parser && db)) {
-    throw new Error("db && Parser are required");
+export default (parser, store) => {
+  if (!(parser && store)) {
+    throw new Error("store && Parser are required");
   }
 
   let numPagesVisited = 0,
@@ -30,13 +24,14 @@ export default (parser, db) => {
           finish();
         }
 
-        currentUrl = await db.findOne({ visited: false });
+        currentUrl = await store.findNotVisited({ visited: false });
 
         if (!currentUrl) {
           logger.info("No more page to visit");
           finish();
         }
 
+        // remove leading slash
         const cleanUrl = currentUrl.url.replace(/\/$/, "");
 
         ({ protocol, hostname } = parserUrl.parse(cleanUrl));
@@ -53,15 +48,9 @@ export default (parser, db) => {
 
         SLEEP > 0 && (await sleep(SLEEP));
       } catch (error) {
-        logger.error(currentUrl.url);
+        await store.update(currentUrl.url, "", true);
 
-        await db.update(
-          { url: currentUrl.url },
-          { url: currentUrl.url, title: "", visited: true },
-          {}
-        );
-
-        logger.error(error);
+        logger.error({ url: currentUtl.url, error });
       }
     }
   };
@@ -81,11 +70,7 @@ export default (parser, db) => {
 
       logger.info(`#${numPagesVisited}: ${url} - ${title}`);
 
-      await db.update(
-        { url: url },
-        { url: url, title: title, visited: true },
-        {}
-      );
+      await store.update(url, title, true);
 
       if (links.length === 0) return;
 
@@ -105,20 +90,14 @@ export default (parser, db) => {
             : (completeUrl = `${protocol}//${baseUrl}/${noLeadingSlashUrl}`);
         }
 
-        const res = await db.find({
-          url: completeUrl
-        });
+        const res = await store.findByUrl(completeUrl);
 
-        if (res && res.length === 0) {
+        if (res) {
           const { hostname } = parserUrl.parse(completeUrl);
 
           if (isBlackListed(hostname)) continue;
 
-          await db.insert({
-            url: completeUrl,
-            title: "",
-            visited: false
-          });
+          await store.insert(completeUrl, "", false);
         }
       }
     } catch (error) {
@@ -129,9 +108,7 @@ export default (parser, db) => {
   const canFetch = (url, userAgent) => {
     const { hostname, protocol } = parserUrl.parse(url);
 
-    const parser = new robots.RobotsParser(
-      `${protocol}//${hostname}/robots.txt`
-    );
+    const parser = new robots.RobotsParser(`${protocol}//${hostname}/robots.txt`);
 
     return parser.canFetchSync(userAgent, url);
   };
