@@ -21,8 +21,8 @@ export default () => {
     const anchors = $("a");
     const hrefs = [];
 
-    $(anchors).each(() => {
-      const href = $(this).attr("href");
+    $(anchors).each(index => {
+      const href = $(anchors[index]).attr("href");
       hrefs.push(href);
     });
 

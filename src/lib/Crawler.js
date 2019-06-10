@@ -20,7 +20,7 @@ export default (parser, store) => {
     while (true) {
       try {
         if (numPagesVisited >= MAX_PAGES_TO_VISIT) {
-          logger.info("Max limit of number of pages reached");
+          logger.info("Max number of pages limit reached");
           finish();
         }
 
@@ -33,14 +33,20 @@ export default (parser, store) => {
 
         // remove leading slash
         const cleanUrl = currentUrl.url.replace(/\/$/, "");
-
         ({ protocol, hostname } = parserUrl.parse(cleanUrl));
-
-        if (isBlackListed(hostname)) continue;
+        if (BLACKLIST.includes(hostname)) {
+          await store.update(cleanUrl, "", true);
+          logger.info(`${cleanUrl} black listed`);
+          continue;
+        }
 
         if (hostname !== baseUrl) {
           isFetchable = canFetch(cleanUrl, HEADERS["User-Agent"]);
-          if (!isFetchable) continue;
+          if (!isFetchable) {
+            await store.update(cleanUrl, "", true);
+            logger.info(`${cleanUrl} not fetchable`);
+            continue;
+          }
           baseUrl = hostname;
         }
 
@@ -49,8 +55,7 @@ export default (parser, store) => {
         SLEEP > 0 && (await sleep(SLEEP));
       } catch (error) {
         await store.update(currentUrl.url, "", true);
-
-        logger.error({ url: currentUtl.url, error });
+        logger.error(JSON.stringify({ url: currentUrl.url, error }));
       }
     }
   };
@@ -92,10 +97,10 @@ export default (parser, store) => {
 
         const res = await store.findByUrl(completeUrl);
 
-        if (res) {
+        if (!res) {
           const { hostname } = parserUrl.parse(completeUrl);
 
-          if (isBlackListed(hostname)) continue;
+          if (BLACKLIST.includes(hostname)) continue;
 
           await store.insert(completeUrl, "", false);
         }
@@ -111,10 +116,6 @@ export default (parser, store) => {
     const parser = new robots.RobotsParser(`${protocol}//${hostname}/robots.txt`);
 
     return parser.canFetchSync(userAgent, url);
-  };
-
-  const isBlackListed = hostname => {
-    return BLACKLIST.indexOf(hostname) > -1;
   };
 
   const finish = () => {

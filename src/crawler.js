@@ -1,9 +1,11 @@
-import Parser from "./lib/Parser";
 import parserUrl from "url";
+
+import Parser from "./lib/Parser";
 import Crawler from "./lib/Crawler";
+import Store from "./lib/NeDBStore";
+
 import { START_URLS, BLACKLIST } from "../conf/config.json";
-import Datastore from "nedb-promises";
-import Store from "./lib/Store";
+import { logger } from "winston";
 
 const CONCURRENT = 1;
 
@@ -13,23 +15,23 @@ export default async function init() {
   const store = Store();
   await store.init();
 
-  // init and load db
-  // const db = Datastore.create({ filename: "./db" });
-  // db.persistence.setAutocompactionInterval(10000);
-  // await db.load();
-
   // insert initial urls in database
-  await Promise.all(
-    urls.map(async url => {
-      const res = await store.findByUrl(url);
+  try {
+    await Promise.all(
+      urls.map(async url => {
+        const res = await store.findByUrl(url);
 
-      if (!res) {
-        ({ protocol, hostname } = parserUrl.parse(cleanUrl));
-        if (BLACKLIST.includes(hostname)) return;
-        await store.insert(url, "", false);
-      }
-    })
-  );
+        if (!res) {
+          const cleanUrl = url.replace(/\/$/, "");
+          const { hostname } = parserUrl.parse(cleanUrl);
+          if (BLACKLIST.includes(hostname)) return;
+          await store.insert(cleanUrl, "", false);
+        }
+      })
+    );
+  } catch (err) {
+    logger.error(err);
+  }
 
   const crawlers = [];
 
