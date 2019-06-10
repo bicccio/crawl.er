@@ -1,31 +1,33 @@
 import cheerio from "cheerio";
 let $ = {};
 
-export default class Parser {
-  parse(html) {
+export default () => {
+  const parse = html => {
     $ = cheerio.load(html);
-  }
+  };
 
-  getElements() {
+  const getElements = () => {
     return {
-      title: this.getTitle(),
-      links: this.getLinks()
+      title: getTitle(),
+      links: getLinks()
     };
-  }
+  };
 
-  getTitle() {
+  const getTitle = () => {
     return $("title").text();
-  }
+  };
 
-  getLinks() {
+  const getLinks = () => {
     const anchors = $("a");
     const hrefs = [];
 
-    $(anchors).each(function(i, link) {
+    $(anchors).each(() => {
       const href = $(this).attr("href");
       hrefs.push(href);
     });
 
     return hrefs;
-  }
-}
+  };
+
+  return { parse, getElements, getLinks, getTitle };
+};
