@@ -32,7 +32,7 @@ export default (parser, store) => {
         }
 
         // remove leading slash
-        const cleanUrl = currentUrl.url.replace(/\/$/, "");
+        const cleanUrl = currentUrl.url; //.replace(/\/$/, "");
         ({ protocol, hostname } = parserUrl.parse(cleanUrl));
         if (BLACKLIST.includes(hostname)) {
           await store.update(cleanUrl, "", true);
@@ -89,10 +89,14 @@ export default (parser, store) => {
           completeUrl = cleanUrl;
         } else {
           const noLeadingSlashUrl = cleanUrl.replace(/^\/+/g, "");
-          const searchPattern = new RegExp("^//");
-          completeUrl = searchPattern.test(cleanUrl)
-            ? (completeUrl = `${protocol}//${noLeadingSlashUrl}`)
-            : (completeUrl = `${protocol}//${baseUrl}/${noLeadingSlashUrl}`);
+          if (noLeadingSlashUrl === "") {
+            completeUrl = `${protocol}//${baseUrl}`;
+          } else {
+            const searchPattern = new RegExp("^//");
+            completeUrl = searchPattern.test(cleanUrl)
+              ? `${protocol}//${noLeadingSlashUrl}`
+              : `${protocol}//${baseUrl}/${noLeadingSlashUrl}`;
+          }
         }
 
         const res = await store.findByUrl(completeUrl);
