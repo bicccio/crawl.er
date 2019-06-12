@@ -1,5 +1,6 @@
 import request from "request-promise";
 import parserUrl from "url";
+import UrlCleaner from "./UrlCleaner";
 import robots from "robots";
 import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../conf/config.json";
 import logger from "./log";
@@ -11,9 +12,8 @@ export default (parser, store) => {
 
   let numPagesVisited = 0,
     baseUrl = "",
-    isFetchable = false,
-    currentUrl,
     protocol,
+    currentUrl,
     hostname;
 
   const crawl = async () => {
@@ -32,21 +32,22 @@ export default (parser, store) => {
         }
 
         // remove leading slash
-        const cleanUrl = currentUrl.url; //.replace(/\/$/, "");
-        ({ protocol, hostname } = parserUrl.parse(cleanUrl));
-        if (BLACKLIST.includes(hostname)) {
-          await store.update(cleanUrl, "", true);
-          logger.info(`${cleanUrl} black listed`);
-          continue;
-        }
+        const cleanUrl = currentUrl.url.replace(/\/$/, "");
+        ({ hostname, protocol } = parserUrl.parse(cleanUrl));
 
         if (hostname !== baseUrl) {
-          isFetchable = canFetch(cleanUrl, HEADERS["User-Agent"]);
-          if (!isFetchable) {
+          if (BLACKLIST.includes(hostname)) {
+            await store.update(cleanUrl, "", true);
+            logger.info(`${cleanUrl} black listed`);
+            continue;
+          }
+
+          if (!canFetch(cleanUrl, HEADERS["User-Agent"])) {
             await store.update(cleanUrl, "", true);
             logger.info(`${cleanUrl} not fetchable`);
             continue;
           }
+
           baseUrl = hostname;
         }
 
@@ -77,42 +78,58 @@ export default (parser, store) => {
 
       await store.update(url, title, true);
 
-      if (links.length === 0) return;
-
-      for (const link of links) {
-        if (!link) return;
-
-        const cleanUrl = link.replace(/\/$/, "");
-        let completeUrl = "";
-
-        if (cleanUrl.indexOf("http") > -1) {
-          completeUrl = cleanUrl;
-        } else {
-          const noLeadingSlashUrl = cleanUrl.replace(/^\/+/g, "");
-          if (noLeadingSlashUrl === "") {
-            completeUrl = `${protocol}//${baseUrl}`;
-          } else {
-            const searchPattern = new RegExp("^//");
-            completeUrl = searchPattern.test(cleanUrl)
-              ? `${protocol}//${noLeadingSlashUrl}`
-              : `${protocol}//${baseUrl}/${noLeadingSlashUrl}`;
-          }
-        }
-
-        const res = await store.findByUrl(completeUrl);
-
-        if (!res) {
-          const { hostname } = parserUrl.parse(completeUrl);
-
-          if (BLACKLIST.includes(hostname)) continue;
-
-          await store.insert(completeUrl, "", false);
-        }
-      }
+      await updateLinks(links);
     } catch (error) {
       throw error;
     }
   };
+
+  const updateLinks = async links => {
+    if (links.length === 0) return;
+
+    for (const link of links) {
+      if (!link) return;
+
+      const { clean: cleanUrl } = UrlCleaner();
+      const completeUrl = cleanUrl(link, hostname, protocol);
+
+      const res = await store.findByUrl(completeUrl);
+
+      if (!res) {
+        const { hostname } = parserUrl.parse(completeUrl);
+
+        if (BLACKLIST.includes(hostname)) continue;
+
+        await store.insert(completeUrl, "", false);
+      }
+    }
+  };
+
+  // const cleanUrl = (url, protocol) => {
+  //   // remove trailing slash
+
+  //   let cleanUrl = url.replace(/\/$/, "");
+
+  //   let completeUrl = "";
+  //   if (cleanUrl.includes("http")) {
+  //     // urls with protocol and all
+  //     completeUrl = cleanUrl;
+  //   } else {
+  //     // remove double slash at the begin of the url
+  //     cleanUrl = cleanUrl.replace(/^\/+/g, "");
+  //     completeUrl = `${protocol}//${cleanUrl}`;
+  //     // if (cleanUrl === "") {
+  //     //   completeUrl = `${protocol}//${cleanUrl}`;
+  //     // } else {
+  //     //   // const searchPattern = new RegExp("^//");
+  //     //   // completeUrl = searchPattern.test(cleanUrl)
+  //     //   //   ? `${protocol}//${noLeadingSlashUrl}`
+  //     //   //   : `${protocol}//${baseUrl}/${noLeadingSlashUrl}`;
+  //     // }
+  //   }
+
+  //   return completeUrl;
+  // };
 
   const canFetch = (url, userAgent) => {
     const { hostname, protocol } = parserUrl.parse(url);
