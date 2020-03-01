@@ -2,29 +2,31 @@ import request from "request-promise";
 import parserUrl from "url";
 import UrlCleaner from "./UrlCleaner";
 import robots from "robots";
-import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../conf/config.json";
+import {
+  MAX_PAGES_TO_VISIT,
+  HEADERS,
+  REQUEST_TIMEOUT,
+  BLACKLIST,
+  SLEEP
+} from "../../conf/config.json";
 import logger from "./log";
 
 export default (parser, store) => {
   if (!(parser && store)) {
-    throw new Error("store && Parser are required");
+    throw new Error("store & Parser are required");
   }
 
   let numPagesVisited = 0,
-    baseUrl = "",
+    baseUrl,
     protocol,
-    currentUrl,
     hostname;
 
   const crawl = async () => {
-    while (true) {
-      try {
-        if (numPagesVisited >= MAX_PAGES_TO_VISIT) {
-          logger.info("Max number of pages limit reached");
-          finish();
-        }
+    let currentUrl;
 
-        currentUrl = await store.findNotVisited({ visited: false });
+    while (numPagesVisited < MAX_PAGES_TO_VISIT) {
+      try {
+        currentUrl = await store.findNotVisited();
 
         if (!currentUrl) {
           logger.info("No more page to visit");
@@ -59,29 +61,27 @@ export default (parser, store) => {
         logger.error(JSON.stringify({ url: currentUrl.url, error }));
       }
     }
+
+    logger.info("Max number of pages limit reached");
   };
 
   const visitPage = async url => {
-    try {
-      const html = await request({
-        uri: url,
-        headers: HEADERS,
-        timeout: REQUEST_TIMEOUT
-      });
+    const html = await request({
+      uri: url,
+      headers: HEADERS,
+      timeout: REQUEST_TIMEOUT
+    });
 
-      parser.parse(html);
+    parser.parse(html);
 
-      const { title, links } = parser.getElements();
-      numPagesVisited++;
+    const { title, links } = parser.getElements();
+    numPagesVisited++;
 
-      logger.info(`#${numPagesVisited}: ${url} - ${title}`);
+    logger.info(`#${numPagesVisited}: ${url} - ${title}`);
 
-      await store.update(url, title, true);
+    await store.update(url, title, true);
 
-      await updateLinks(links);
-    } catch (error) {
-      throw error;
-    }
+    await updateLinks(links);
   };
 
   const updateLinks = async links => {
@@ -96,8 +96,6 @@ export default (parser, store) => {
       const res = await store.findByUrl(completeUrl);
 
       if (!res) {
-        const { hostname } = parserUrl.parse(completeUrl);
-
         if (BLACKLIST.includes(hostname)) continue;
 
         await store.insert(completeUrl, "", false);
@@ -105,36 +103,10 @@ export default (parser, store) => {
     }
   };
 
-  // const cleanUrl = (url, protocol) => {
-  //   // remove trailing slash
-
-  //   let cleanUrl = url.replace(/\/$/, "");
-
-  //   let completeUrl = "";
-  //   if (cleanUrl.includes("http")) {
-  //     // urls with protocol and all
-  //     completeUrl = cleanUrl;
-  //   } else {
-  //     // remove double slash at the begin of the url
-  //     cleanUrl = cleanUrl.replace(/^\/+/g, "");
-  //     completeUrl = `${protocol}//${cleanUrl}`;
-  //     // if (cleanUrl === "") {
-  //     //   completeUrl = `${protocol}//${cleanUrl}`;
-  //     // } else {
-  //     //   // const searchPattern = new RegExp("^//");
-  //     //   // completeUrl = searchPattern.test(cleanUrl)
-  //     //   //   ? `${protocol}//${noLeadingSlashUrl}`
-  //     //   //   : `${protocol}//${baseUrl}/${noLeadingSlashUrl}`;
-  //     // }
-  //   }
-
-  //   return completeUrl;
-  // };
-
   const canFetch = (url, userAgent) => {
-    const { hostname, protocol } = parserUrl.parse(url);
-
-    const parser = new robots.RobotsParser(`${protocol}//${hostname}/robots.txt`);
+    const parser = new robots.RobotsParser(
+      `${protocol}//${hostname}/robots.txt`
+    );
 
     return parser.canFetchSync(userAgent, url);
   };
