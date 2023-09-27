@@ -1,15 +1,15 @@
-import cheerio from "cheerio";
+import * as cheerio from "cheerio";
 let $ = {};
 
 export default () => {
-  const parse = html => {
+  const parse = (html) => {
     $ = cheerio.load(html);
   };
 
   const getElements = () => {
     return {
       title: getTitle(),
-      links: getLinks()
+      links: getLinks(),
     };
   };
 
@@ -21,7 +21,7 @@ export default () => {
     const anchors = $("a");
     const hrefs = [];
 
-    $(anchors).each(index => {
+    $(anchors).each((index) => {
       const href = $(anchors[index]).attr("href");
       hrefs.push(href);
     });
