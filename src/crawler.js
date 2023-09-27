@@ -1,5 +1,3 @@
-import parserUrl from "node:url";
-
 import Parser from "./lib/Parser";
 import Crawler from "./lib/Crawler";
 import Store from "./lib/NeDBStore";
@@ -34,9 +32,5 @@ export default async function init() {
     logger.error(err);
   }
 
-  const crawlers = [];
-
-  for (let i = 0; i < CONCURRENT; i++) crawlers.push(Crawler(Parser(), store));
-
-  return crawlers;
+  return Crawler(Parser(), store);
 }
