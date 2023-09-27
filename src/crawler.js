@@ -1,4 +1,4 @@
-import parserUrl from "url";
+import parserUrl from "node:url";
 
 import Parser from "./lib/Parser";
 import Crawler from "./lib/Crawler";
@@ -18,12 +18,13 @@ export default async function init() {
   // insert initial urls in database
   try {
     await Promise.all(
-      urls.map(async url => {
+      urls.map(async (url) => {
         const res = await store.findByUrl(url);
 
         if (!res) {
           const cleanUrl = url.replace(/\/$/, "");
-          const { hostname } = parserUrl.parse(cleanUrl);
+          const urlObject = new URL(url);
+          const hostname = urlObject.hostname;
           if (BLACKLIST.includes(hostname)) return;
           await store.insert(cleanUrl, "", false);
         }
