@@ -2,13 +2,7 @@ import request from "request-promise";
 import parserUrl from "url";
 import UrlCleaner from "./UrlCleaner";
 import robots from "robots";
-import {
-  MAX_PAGES_TO_VISIT,
-  HEADERS,
-  REQUEST_TIMEOUT,
-  BLACKLIST,
-  SLEEP
-} from "../../conf/config.json";
+import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../conf/config.json";
 import logger from "./log";
 
 export default (parser, store) => {
@@ -65,11 +59,11 @@ export default (parser, store) => {
     logger.info("Max number of pages limit reached");
   };
 
-  const visitPage = async url => {
+  const visitPage = async (url) => {
     const html = await request({
       uri: url,
       headers: HEADERS,
-      timeout: REQUEST_TIMEOUT
+      timeout: REQUEST_TIMEOUT,
     });
 
     parser.parse(html);
@@ -84,7 +78,7 @@ export default (parser, store) => {
     await updateLinks(links);
   };
 
-  const updateLinks = async links => {
+  const updateLinks = async (links) => {
     if (links.length === 0) return;
 
     for (const link of links) {
@@ -104,11 +98,10 @@ export default (parser, store) => {
   };
 
   const canFetch = (url, userAgent) => {
-    const parser = new robots.RobotsParser(
-      `${protocol}//${hostname}/robots.txt`
-    );
+    const parser = new robots.RobotsParser(`${protocol}//${hostname}/robots.txt`);
 
-    return parser.canFetchSync(userAgent, url);
+    const res = parser.canFetchSync(userAgent, url);
+    return res;
   };
 
   const finish = () => {
@@ -116,13 +109,13 @@ export default (parser, store) => {
     process.exit();
   };
 
-  const sleep = ms => {
-    return new Promise(resolve => {
+  const sleep = (ms) => {
+    return new Promise((resolve) => {
       setTimeout(resolve, ms);
     });
   };
 
   return {
-    crawl
+    crawl,
   };
 };
