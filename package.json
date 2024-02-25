@@ -14,6 +14,7 @@
     "babel-register": "^6.26.0",
     "cheerio": "^1.0.0-rc.12",
     "nedb-promises": "^6.2.3",
+    "redis": "^4.6.10",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
     "robots": "^0.10.1",

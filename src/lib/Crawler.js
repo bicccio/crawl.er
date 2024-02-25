@@ -5,9 +5,36 @@ import robots from "robots";
 import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../conf/config.json";
 import logger from "./log";
 
-export default (parser, store) => {
-  if (!(parser && store)) {
-    throw new Error("store & Parser are required");
+export default (parser, client) => {
+  async function addUrlToQueue(url) {
+    const isVisited = await client.sIsMember("visitedUrls", url);
+    if (!isVisited) {
+      const score = Date.now(); // Usiamo il timestamp corrente come punteggio
+      await client.zAdd("urlQueue", { score, value: url });
+      console.log(`URL aggiunto: ${url} con punteggio ${score}`);
+    } else {
+      console.log(`URL già visitato: ${url}`);
+    }
+  }
+
+  async function getNextUrlToVisit() {
+    const url = await client.zPopMin("urlQueue");
+    if (url) {
+      console.log(`Prossimo URL da visitare: ${url.value}`);
+      return url;
+    } else {
+      console.log("Nessun URL rimasto da visitare.");
+      return null;
+    }
+  }
+
+  async function markUrlAsVisited(url) {
+    await client.sAdd("visitedUrls", url);
+    console.log(`URL marcato come visitato: ${url}`);
+  }
+
+  if (!(parser && client)) {
+    throw new Error("client & Parser are required");
   }
 
   let numPagesVisited = 0,
@@ -20,7 +47,7 @@ export default (parser, store) => {
 
     while (numPagesVisited < MAX_PAGES_TO_VISIT) {
       try {
-        currentUrl = await store.findNotVisited();
+        currentUrl = await getNextUrlToVisit();
 
         if (!currentUrl) {
           logger.info("No more page to visit");
@@ -28,38 +55,38 @@ export default (parser, store) => {
         }
 
         // remove leading slash
-        const cleanUrl = currentUrl.url.replace(/\/$/, "");
+        const cleanUrl = currentUrl.value.replace(/\/$/, "");
         ({ hostname, protocol } = parserUrl.parse(cleanUrl));
 
         if (hostname !== baseUrl) {
           if (BLACKLIST.includes(hostname)) {
-            await store.update(cleanUrl, "", true);
             logger.info(`${cleanUrl} black listed`);
+            await markUrlAsVisited(cleanUrl);
             continue;
           }
 
           if (!canFetch(cleanUrl, HEADERS["User-Agent"])) {
-            await store.update(cleanUrl, "", true);
             logger.info(`${cleanUrl} not fetchable`);
+            await markUrlAsVisited(cleanUrl);
             continue;
           }
 
           baseUrl = hostname;
         }
 
-        await visitPage(cleanUrl);
+        await visit(cleanUrl);
 
         SLEEP > 0 && (await sleep(SLEEP));
       } catch (error) {
-        await store.update(currentUrl.url, "", true);
-        logger.error(JSON.stringify({ url: currentUrl.url, error }));
+        await markUrlAsVisited(currentUrl.value); // Assicurati di segnare come visitato solo se effettivamente lo visiti
+        logger.error(JSON.stringify({ url: currentUrl.value, error }));
       }
     }
 
     logger.info("Max number of pages limit reached");
   };
 
-  const visitPage = async (url) => {
+  const visit = async (url) => {
     const html = await request({
       uri: url,
       headers: HEADERS,
@@ -72,8 +99,7 @@ export default (parser, store) => {
     numPagesVisited++;
 
     logger.info(`#${numPagesVisited}: ${url} - ${title}`);
-
-    await store.update(url, title, true);
+    await markUrlAsVisited(url); // Assicurati di segnare come visitato solo se effettivamente lo visiti
 
     await updateLinks(links);
   };
@@ -87,13 +113,9 @@ export default (parser, store) => {
       const { clean: cleanUrl } = UrlCleaner();
       const completeUrl = cleanUrl(link, hostname, protocol);
 
-      const res = await store.findByUrl(completeUrl);
+      if (BLACKLIST.includes(hostname)) continue;
 
-      if (!res) {
-        if (BLACKLIST.includes(hostname)) continue;
-
-        await store.insert(completeUrl, "", false);
-      }
+      await addUrlToQueue(completeUrl);
     }
   };
 
