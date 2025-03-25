@@ -2,7 +2,7 @@ import request from "request-promise";
 import parserUrl from "url";
 import UrlCleaner from "./UrlCleaner";
 import robots from "robots";
-import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../conf/config.json";
+import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../config.json";
 import logger from "./log";
 
 export default (parser, client) => {

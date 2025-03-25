@@ -1,7 +1,7 @@
 import Parser from "./lib/Parser";
 import Crawler from "./lib/Crawler";
 import { createClient } from "redis";
-import { START_URLS, BLACKLIST } from "../conf/config.json";
+import { START_URLS, BLACKLIST } from "../config.json";
 import { logger } from "winston";
 
 export default async function init() {
