@@ -84,6 +84,7 @@ export default (parser, client) => {
     }
 
     logger.info("Max number of pages limit reached");
+    finish();
   };
 
   const visit = async (url) => {
@@ -108,7 +109,7 @@ export default (parser, client) => {
     if (links.length === 0) return;
 
     for (const link of links) {
-      if (!link) return;
+      if (!link) continue;
 
       const { clean: cleanUrl } = UrlCleaner();
       const completeUrl = cleanUrl(link, hostname, protocol);
@@ -119,16 +120,24 @@ export default (parser, client) => {
     }
   };
 
-  const canFetch = (url, userAgent) => {
-    const parser = new robots.RobotsParser(`${protocol}//${hostname}/robots.txt`);
-
-    const res = parser.canFetchSync(userAgent, url);
-    return res;
+  const canFetch = async (url, userAgent) => {
+    return new Promise((resolve) => {
+      const parser = new robots.RobotsParser(`${protocol}//${hostname}/robots.txt`);
+      parser.canFetch(userAgent, url, (access) => {
+        resolve(access);
+      });
+    });
   };
 
-  const finish = () => {
+  const finish = async () => {
     logger.info("************** Finish ********************");
-    process.exit();
+    try {
+      await client.quit(); // Chiudi correttamente la connessione Redis
+      logger.info("Redis connection closed");
+    } catch (err) {
+      logger.error("Error closing Redis connection", err);
+    }
+    process.exit(0);
   };
 
   const sleep = (ms) => {
