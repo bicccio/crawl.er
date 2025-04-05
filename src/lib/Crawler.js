@@ -11,26 +11,26 @@ export default (parser, client) => {
     if (!isVisited) {
       const score = Date.now(); // Usiamo il timestamp corrente come punteggio
       await client.zAdd("urlQueue", { score, value: url });
-      console.log(`URL aggiunto: ${url} con punteggio ${score}`);
+      logger.info(`URL aggiunto: ${url} con punteggio ${score}`);
     } else {
-      console.log(`URL già visitato: ${url}`);
+      logger.info(`URL già visitato: ${url}`);
     }
   }
 
   async function getNextUrlToVisit() {
     const url = await client.zPopMin("urlQueue");
     if (url) {
-      console.log(`Prossimo URL da visitare: ${url.value}`);
+      logger.info(`Prossimo URL da visitare: ${url.value}`);
       return url;
     } else {
-      console.log("Nessun URL rimasto da visitare.");
+      logger.info("Nessun URL rimasto da visitare.");
       return null;
     }
   }
 
   async function markUrlAsVisited(url) {
     await client.sAdd("visitedUrls", url);
-    console.log(`URL marcato come visitato: ${url}`);
+    logger.info(`URL marcato come visitato: ${url}`);
   }
 
   if (!(parser && client)) {
@@ -83,7 +83,7 @@ export default (parser, client) => {
       }
     }
 
-    logger.info("Max number of pages limit reached");
+    logger.info(`Max number of pages limit reached (${MAX_PAGES_TO_VISIT})`);
     finish();
   };
 

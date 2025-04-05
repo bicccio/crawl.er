@@ -2,7 +2,7 @@ import Parser from "../lib/Parser";
 import Crawler from "../lib/Crawler";
 import { createClient } from "redis";
 import { START_URLS, BLACKLIST } from "../../config.json";
-import { logger } from "winston";
+import logger from "../lib/log";
 
 /**
  * Aggiunge un URL alla coda se non è stato già visitato
@@ -13,9 +13,9 @@ async function addUrlToQueue(client, url) {
   if (!isVisited) {
     const score = Date.now();
     await client.zAdd("urlQueue", { score, value: url });
-    console.log(`URL aggiunto: ${url} con punteggio ${score}`);
+    logger.info(`URL aggiunto: ${url} con punteggio ${score}`);
   } else {
-    console.log(`URL già visitato: ${url}`);
+    logger.info(`URL già visitato: ${url}`);
   }
 }
 
@@ -24,7 +24,7 @@ async function addUrlToQueue(client, url) {
  */
 async function setupRedisClient(initialUrls) {
   const client = createClient();
-  client.on("error", (err) => console.log("Redis Client Error", err));
+  client.on("error", (err) => logger.error("Redis Client Error", err));
 
   await client.connect();
 
@@ -41,6 +41,7 @@ async function setupRedisClient(initialUrls) {
       })
     );
   } catch (err) {
+    console.log(err);
     logger.error(err);
   }
 

@@ -1,9 +1,8 @@
 import winston from "winston";
-
-const { combine, colorize } = winston.format;
 import fs from "fs";
 import path from "path";
 
+const { combine, colorize } = winston.format;
 const logDir = "log";
 
 if (!fs.existsSync(logDir)) {
@@ -20,9 +19,9 @@ const logger = winston.createLogger({
     new winston.transports.File({
       filename: filename,
       options: { encoding: "utf8" },
-      format: winston.format.printf(info => `${info.message}`)
-    })
-  ]
+      format: winston.format.printf((info) => `${info.message}`),
+    }),
+  ],
 });
 
-module.exports = logger;
+export default logger;

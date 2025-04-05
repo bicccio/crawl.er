@@ -1,3 +1,5 @@
+const logger = require("./src/lib/log");
+
 // Configurazione Babel per la transpilazione
 require("@babel/register")({
   presets: [
@@ -21,7 +23,7 @@ const { setupCrawler } = require("./src/services/crawlerService");
     const crawler = await setupCrawler();
     crawler.crawl();
   } catch (error) {
-    console.error("Errore durante l'avvio del crawler:", error);
+    logger.error("Errore durante l'avvio del crawler:", error);
     process.exit(1);
   }
 })();

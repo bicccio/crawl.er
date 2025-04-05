@@ -6,7 +6,7 @@
   "scripts": {
     "test": "node_modules/mocha/bin/mocha --require babel-register --reporter mocha-osx-reporter --watch --watch-extensions js test",
     "build": "babel src -s -D -d dist --source-maps",
-    "start": "node app.js"
+    "start": "node index.js"
   },
   "author": "@biccc",
   "license": "ISC",
