@@ -4,7 +4,7 @@ import UrlCleaner from "./UrlCleaner";
 import robots from "robots";
 import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../config.json";
 import logger from "./log";
-import QueueManager from "./QueueManager";
+import QueueManagerFactory from "./QueueManager";
 
 export default (parser, client) => {
   let numPagesVisited = 0,
@@ -12,12 +12,15 @@ export default (parser, client) => {
     protocol,
     hostname;
 
+  // Inizializza QueueManager una sola volta con il client Redis
+  const queueManager = QueueManagerFactory(client);
+
   const crawl = async () => {
     let currentUrl;
 
     while (numPagesVisited < MAX_PAGES_TO_VISIT) {
       try {
-        currentUrl = await QueueManager.getNextUrlToVisit(client);
+        currentUrl = await queueManager.getNextUrlToVisit();
 
         if (!currentUrl) {
           logger.info("No more page to visit");
@@ -31,13 +34,13 @@ export default (parser, client) => {
         if (hostname !== baseUrl) {
           if (BLACKLIST.includes(hostname)) {
             logger.info(`${cleanUrl} black listed`);
-            await QueueManager.markUrlAsVisited(client, cleanUrl);
+            await queueManager.markUrlAsVisited(cleanUrl);
             continue;
           }
 
           if (!canFetch(cleanUrl, HEADERS["User-Agent"])) {
             logger.info(`${cleanUrl} not fetchable`);
-            await QueueManager.markUrlAsVisited(client, cleanUrl);
+            await queueManager.markUrlAsVisited(cleanUrl);
             continue;
           }
 
@@ -48,7 +51,7 @@ export default (parser, client) => {
 
         SLEEP > 0 && (await sleep(SLEEP));
       } catch (error) {
-        await QueueManager.markUrlAsVisited(client, currentUrl.value); // Assicurati di segnare come visitato solo se effettivamente lo visiti
+        await queueManager.markUrlAsVisited(currentUrl.value); // Assicurati di segnare come visitato solo se effettivamente lo visiti
         logger.error(JSON.stringify({ url: currentUrl.value, error }));
       }
     }
@@ -70,7 +73,7 @@ export default (parser, client) => {
     numPagesVisited++;
 
     logger.info(`#${numPagesVisited}: ${url} - ${title}`);
-    await QueueManager.markUrlAsVisited(client, url); // Assicurati di segnare come visitato solo se effettivamente lo visiti
+    await queueManager.markUrlAsVisited(url); // Assicurati di segnare come visitato solo se effettivamente lo visiti
 
     await updateLinks(links);
   };
@@ -86,7 +89,7 @@ export default (parser, client) => {
 
       if (BLACKLIST.includes(hostname)) continue;
 
-      await QueueManager.addUrlToQueue(client, completeUrl);
+      await queueManager.addUrlToQueue(completeUrl);
     }
   };
 

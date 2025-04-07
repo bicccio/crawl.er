@@ -3,7 +3,7 @@ import Crawler from "../lib/Crawler";
 import { createClient } from "redis";
 import { START_URLS, BLACKLIST } from "../../config.json";
 import logger from "../lib/log";
-import QueueManager from "../lib/QueueManager";
+import QueueManagerFactory from "../lib/QueueManager";
 
 /**
  * Configures the crawler with Redis and returns a ready-to-use instance
@@ -34,6 +34,9 @@ async function setupRedisClient() {
  */
 async function initializeUrlQueue(redisClient, urls) {
   try {
+    // Inizializziamo QueueManager con il client Redis
+    const queueManager = QueueManagerFactory(redisClient);
+
     await Promise.all(
       urls.map(async (url) => {
         const cleanUrl = url.replace(/\/$/, ""); // Remove trailing slash
@@ -41,7 +44,8 @@ async function initializeUrlQueue(redisClient, urls) {
 
         if (BLACKLIST.includes(urlObject.hostname)) return;
 
-        return await QueueManager.addUrlToQueue(redisClient, cleanUrl);
+        // Utilizziamo queueManager senza passare il client ogni volta
+        return await queueManager.addUrlToQueue(cleanUrl);
       })
     );
   } catch (err) {
