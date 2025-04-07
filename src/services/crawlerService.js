@@ -3,56 +3,50 @@ import Crawler from "../lib/Crawler";
 import { createClient } from "redis";
 import { START_URLS, BLACKLIST } from "../../config.json";
 import logger from "../lib/log";
+import QueueManager from "../lib/QueueManager";
 
 /**
- * Aggiunge un URL alla coda se non è stato già visitato
+ * Configures the crawler with Redis and returns a ready-to-use instance
  */
-async function addUrlToQueue(client, url) {
-  const isVisited = await client.sIsMember("visitedUrls", url);
+export async function setupCrawler() {
+  const initialUrls = process.argv[2] ? [process.argv[2]] : START_URLS;
+  const redisClient = await setupRedisClient();
 
-  if (!isVisited) {
-    const score = Date.now();
-    await client.zAdd("urlQueue", { score, value: url });
-    logger.info(`URL aggiunto: ${url} con punteggio ${score}`);
-  } else {
-    logger.info(`URL già visitato: ${url}`);
-  }
+  await initializeUrlQueue(redisClient, initialUrls);
+
+  return Crawler(Parser(), redisClient);
 }
 
 /**
- * Configura il client Redis e inizializza la coda degli URL
+ * Configures the Redis client and initializes the URL queue
  */
-async function setupRedisClient(initialUrls) {
-  const client = createClient();
-  client.on("error", (err) => logger.error("Redis Client Error", err));
+async function setupRedisClient() {
+  const redisClient = createClient();
+  redisClient.on("error", (err) => logger.error("Redis client error", err));
 
-  await client.connect();
+  await redisClient.connect();
 
-  // Inserisce gli URL iniziali nel database
+  return redisClient;
+}
+
+/**
+ * Initializes the URL queue with the provided URLs
+ */
+async function initializeUrlQueue(redisClient, urls) {
   try {
     await Promise.all(
-      initialUrls.map(async (url) => {
-        const cleanUrl = url.replace(/\/$/, "");
+      urls.map(async (url) => {
+        const cleanUrl = url.replace(/\/$/, ""); // Remove trailing slash
         const urlObject = new URL(url);
-        const hostname = urlObject.hostname;
-        if (BLACKLIST.includes(hostname)) return;
 
-        await addUrlToQueue(client, cleanUrl);
+        if (BLACKLIST.includes(urlObject.hostname)) return;
+
+        return await QueueManager.addUrlToQueue(redisClient, cleanUrl);
       })
     );
   } catch (err) {
-    console.log(err);
     logger.error(err);
   }
 
-  return client;
-}
-
-/**
- * Configura il crawler con Redis e ritorna un'istanza pronta all'uso
- */
-export async function setupCrawler() {
-  const urls = process.argv[2] ? [process.argv[2]] : START_URLS;
-  const client = await setupRedisClient(urls);
-  return Crawler(Parser(), client);
+  return redisClient;
 }

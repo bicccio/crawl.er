@@ -4,39 +4,9 @@ import UrlCleaner from "./UrlCleaner";
 import robots from "robots";
 import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../config.json";
 import logger from "./log";
+import QueueManager from "./QueueManager";
 
 export default (parser, client) => {
-  async function addUrlToQueue(url) {
-    const isVisited = await client.sIsMember("visitedUrls", url);
-    if (!isVisited) {
-      const score = Date.now(); // Usiamo il timestamp corrente come punteggio
-      await client.zAdd("urlQueue", { score, value: url });
-      logger.info(`URL aggiunto: ${url} con punteggio ${score}`);
-    } else {
-      logger.info(`URL già visitato: ${url}`);
-    }
-  }
-
-  async function getNextUrlToVisit() {
-    const url = await client.zPopMin("urlQueue");
-    if (url) {
-      logger.info(`Prossimo URL da visitare: ${url.value}`);
-      return url;
-    } else {
-      logger.info("Nessun URL rimasto da visitare.");
-      return null;
-    }
-  }
-
-  async function markUrlAsVisited(url) {
-    await client.sAdd("visitedUrls", url);
-    logger.info(`URL marcato come visitato: ${url}`);
-  }
-
-  if (!(parser && client)) {
-    throw new Error("client & Parser are required");
-  }
-
   let numPagesVisited = 0,
     baseUrl,
     protocol,
@@ -47,7 +17,7 @@ export default (parser, client) => {
 
     while (numPagesVisited < MAX_PAGES_TO_VISIT) {
       try {
-        currentUrl = await getNextUrlToVisit();
+        currentUrl = await QueueManager.getNextUrlToVisit(client);
 
         if (!currentUrl) {
           logger.info("No more page to visit");
@@ -61,13 +31,13 @@ export default (parser, client) => {
         if (hostname !== baseUrl) {
           if (BLACKLIST.includes(hostname)) {
             logger.info(`${cleanUrl} black listed`);
-            await markUrlAsVisited(cleanUrl);
+            await QueueManager.markUrlAsVisited(client, cleanUrl);
             continue;
           }
 
           if (!canFetch(cleanUrl, HEADERS["User-Agent"])) {
             logger.info(`${cleanUrl} not fetchable`);
-            await markUrlAsVisited(cleanUrl);
+            await QueueManager.markUrlAsVisited(client, cleanUrl);
             continue;
           }
 
@@ -78,7 +48,7 @@ export default (parser, client) => {
 
         SLEEP > 0 && (await sleep(SLEEP));
       } catch (error) {
-        await markUrlAsVisited(currentUrl.value); // Assicurati di segnare come visitato solo se effettivamente lo visiti
+        await QueueManager.markUrlAsVisited(client, currentUrl.value); // Assicurati di segnare come visitato solo se effettivamente lo visiti
         logger.error(JSON.stringify({ url: currentUrl.value, error }));
       }
     }
@@ -100,7 +70,7 @@ export default (parser, client) => {
     numPagesVisited++;
 
     logger.info(`#${numPagesVisited}: ${url} - ${title}`);
-    await markUrlAsVisited(url); // Assicurati di segnare come visitato solo se effettivamente lo visiti
+    await QueueManager.markUrlAsVisited(client, url); // Assicurati di segnare come visitato solo se effettivamente lo visiti
 
     await updateLinks(links);
   };
@@ -116,7 +86,7 @@ export default (parser, client) => {
 
       if (BLACKLIST.includes(hostname)) continue;
 
-      await addUrlToQueue(completeUrl);
+      await QueueManager.addUrlToQueue(client, completeUrl);
     }
   };
 
