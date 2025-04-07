@@ -1,4 +1,6 @@
-const logger = require("./src/lib/log");
+const logger = require("./src/lib/log").default;
+
+console.log(logger.error);
 
 // Configurazione Babel per la transpilazione
 require("@babel/register")({
