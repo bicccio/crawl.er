@@ -5,7 +5,7 @@ import logger from "./log";
  * @param {Object} client - Il client Redis da utilizzare
  * @returns {Object} - Un oggetto con metodi per gestire la coda
  */
-export default (client) => {
+const QueueManager = (client) => {
   /**
    * Aggiunge un URL alla coda se non è già stato visitato
    * @param {string} url - L'URL da aggiungere alla coda
@@ -53,3 +53,5 @@ export default (client) => {
     markUrlAsVisited,
   };
 };
+
+export default QueueManager;

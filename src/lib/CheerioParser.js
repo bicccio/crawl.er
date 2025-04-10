@@ -1,7 +1,8 @@
 import * as cheerio from "cheerio";
+
 let $ = {};
 
-export default () => {
+const CheerioParser = () => {
   const parse = (html) => {
     $ = cheerio.load(html);
   };
@@ -31,3 +32,5 @@ export default () => {
 
   return { parse, getElements, getLinks, getTitle };
 };
+
+export default CheerioParser;

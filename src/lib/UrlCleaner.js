@@ -1,4 +1,4 @@
-export default () => {
+const UrlCleaner = () => {
   const clean = (url, hostname, protocol) => {
     // remove trailing slash
 
@@ -24,3 +24,5 @@ export default () => {
 
   return { clean };
 };
+
+export default UrlCleaner;

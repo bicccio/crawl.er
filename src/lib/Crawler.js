@@ -6,13 +6,12 @@ import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "
 import logger from "./log";
 import QueueManagerFactory from "./QueueManager";
 
-export default (parser, client) => {
+const Crawler = (parser, client) => {
   let numPagesVisited = 0,
     baseUrl,
     protocol,
     hostname;
 
-  // Inizializza QueueManager una sola volta con il client Redis
   const queueManager = QueueManagerFactory(client);
 
   const crawl = async () => {
@@ -51,8 +50,11 @@ export default (parser, client) => {
 
         SLEEP > 0 && (await sleep(SLEEP));
       } catch (error) {
-        await queueManager.markUrlAsVisited(currentUrl.value); // Assicurati di segnare come visitato solo se effettivamente lo visiti
-        logger.error(JSON.stringify({ url: currentUrl.value, error }));
+        if (currentUrl?.value) {
+          await queueManager.markUrlAsVisited(currentUrl.value); // Assicurati di segnare come visitato solo se effettivamente lo visiti
+          logger.error(JSON.stringify({ url: currentUrl.value, error }));
+        }
+        logger.error("Error while crawling", error);
       }
     }
 
@@ -123,3 +125,5 @@ export default (parser, client) => {
     crawl,
   };
 };
+
+export default Crawler;
