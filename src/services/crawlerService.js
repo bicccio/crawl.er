@@ -1,9 +1,9 @@
-import Parser from "../lib/CheerioParser";
-import Crawler from "../lib/Crawler";
+import Parser from "../lib/cheerioParser";
+import Crawler from "../lib/crawler";
 import { createClient } from "redis";
 import { START_URLS, BLACKLIST } from "../../config.json";
-import logger from "../lib/log";
-import QueueManagerFactory from "../lib/QueueManager";
+import logger from "../lib/logger";
+import QueueManagerFactory from "../lib/queueManager";
 
 /**
  * Configures the crawler with Redis and returns a ready-to-use instance
