@@ -1,4 +1,4 @@
-import logger from "./log";
+import logger from "./logger";
 
 /**
  * Factory che crea un gestore della coda di URL per il crawler

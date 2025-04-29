@@ -1,12 +1,12 @@
 import request from "request-promise";
 import parserUrl from "url";
-import UrlCleaner from "./UrlCleaner";
+import UrlCleaner from "./urlCleaner";
 import robots from "robots";
 import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../config.json";
-import logger from "./log";
-import QueueManagerFactory from "./QueueManager";
+import logger from "./logger";
+import QueueManagerFactory from "./queueManager";
 
-const Crawler = (parser, client) => {
+const crawler = (parser, client) => {
   let numPagesVisited = 0,
     baseUrl,
     protocol,
@@ -126,4 +126,4 @@ const Crawler = (parser, client) => {
   };
 };
 
-export default Crawler;
+export default crawler;
