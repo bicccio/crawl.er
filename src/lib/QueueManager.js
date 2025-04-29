@@ -47,10 +47,24 @@ const QueueManager = (client) => {
     logger.info(`URL marcato come visitato: ${url}`);
   };
 
+  /**
+   * Chiude la connessione Redis
+   * @returns {Promise<void>}
+   */
+  const close = async () => {
+    try {
+      await client.quit();
+      logger.info("Connessione Redis chiusa.");
+    } catch (err) {
+      logger.error("Errore durante la chiusura della connessione Redis:", err);
+    }
+  };
+
   return {
     addUrlToQueue,
     getNextUrlToVisit,
     markUrlAsVisited,
+    close,
   };
 };
 
