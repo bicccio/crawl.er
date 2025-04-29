@@ -1,6 +1,6 @@
+import { createClient } from "redis";
 import Parser from "../lib/cheerioParser";
 import Crawler from "../lib/crawler";
-import { createClient } from "redis";
 import { START_URLS, BLACKLIST } from "../../config.json";
 import logger from "../lib/logger";
 import QueueManagerFactory from "../lib/queueManager";
@@ -11,10 +11,10 @@ import QueueManagerFactory from "../lib/queueManager";
 export async function setupCrawler() {
   const initialUrls = process.argv[2] ? [process.argv[2]] : START_URLS;
   const redisClient = await setupRedisClient();
+  const queueManager = await initializeUrlQueue(redisClient, initialUrls);
+  const parser = Parser();
 
-  await initializeUrlQueue(redisClient, initialUrls);
-
-  return Crawler(Parser(), redisClient);
+  return Crawler(parser, queueManager);
 }
 
 /**
@@ -39,15 +39,18 @@ async function initializeUrlQueue(redisClient, urls) {
 
     await Promise.all(
       urls.map(async (url) => {
+        // forse la pulizie delle URL andrebbe fatta nel queueManager
+        // e non qui
         const cleanUrl = url.replace(/\/$/, ""); // Remove trailing slash
         const urlObject = new URL(url);
 
         if (BLACKLIST.includes(urlObject.hostname)) return;
 
-        // Utilizziamo queueManager senza passare il client ogni volta
-        return await queueManager.addUrlToQueue(cleanUrl);
+        return queueManager.addUrlToQueue(cleanUrl);
       })
     );
+
+    return queueManager;
   } catch (err) {
     logger.error(err);
   }

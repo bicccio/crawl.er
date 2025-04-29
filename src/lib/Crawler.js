@@ -4,62 +4,73 @@ import UrlCleaner from "./urlCleaner";
 import robots from "robots";
 import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../config.json";
 import logger from "./logger";
-import QueueManagerFactory from "./queueManager";
 
-const crawler = (parser, client) => {
+const crawler = (parser, queueManager) => {
   let numPagesVisited = 0,
     baseUrl,
     protocol,
     hostname;
 
-  const queueManager = QueueManagerFactory(client);
-
   const crawl = async () => {
-    let currentUrl;
-
-    while (numPagesVisited < MAX_PAGES_TO_VISIT) {
-      try {
-        currentUrl = await queueManager.getNextUrlToVisit();
+    try {
+      while (numPagesVisited < MAX_PAGES_TO_VISIT) {
+        const currentUrl = await queueManager.getNextUrlToVisit();
 
         if (!currentUrl) {
           logger.info("No more page to visit");
-          finish();
+          break;
         }
 
         // remove leading slash
         const cleanUrl = currentUrl.value.replace(/\/$/, "");
-        ({ hostname, protocol } = parserUrl.parse(cleanUrl));
+        const urlInfo = parserUrl.parse(cleanUrl);
 
-        if (hostname !== baseUrl) {
-          if (BLACKLIST.includes(hostname)) {
+        const { hostname: currentHostname, protocol: currentProtocol } = urlInfo;
+
+        if (currentHostname !== baseUrl) {
+          if (BLACKLIST.includes(currentHostname)) {
             logger.info(`${cleanUrl} black listed`);
             await queueManager.markUrlAsVisited(cleanUrl);
             continue;
           }
 
-          if (!canFetch(cleanUrl, HEADERS["User-Agent"])) {
-            logger.info(`${cleanUrl} not fetchable`);
+          try {
+            const fetchable = await canFetch(cleanUrl, HEADERS["User-Agent"]);
+            if (!fetchable) {
+              logger.info(`${cleanUrl} not fetchable`);
+              await queueManager.markUrlAsVisited(cleanUrl);
+              continue;
+            }
+          } catch (error) {
+            logger.error(`Error checking robots.txt for ${cleanUrl}`, error);
             await queueManager.markUrlAsVisited(cleanUrl);
             continue;
           }
 
-          baseUrl = hostname;
+          baseUrl = currentHostname;
+          hostname = currentHostname;
+          protocol = currentProtocol;
         }
 
-        await visit(cleanUrl);
+        try {
+          await visit(cleanUrl);
 
-        SLEEP > 0 && (await sleep(SLEEP));
-      } catch (error) {
-        if (currentUrl?.value) {
-          await queueManager.markUrlAsVisited(currentUrl.value); // Assicurati di segnare come visitato solo se effettivamente lo visiti
-          logger.error(JSON.stringify({ url: currentUrl.value, error }));
+          if (SLEEP > 0) {
+            await sleep(SLEEP);
+          }
+        } catch (error) {
+          await queueManager.markUrlAsVisited(cleanUrl);
+          logger.error(JSON.stringify({ url: cleanUrl, error: error.message }));
         }
-        logger.error("Error while crawling", error);
       }
+      if (numPagesVisited >= MAX_PAGES_TO_VISIT) {
+        logger.info(`Max number of pages limit reached (${MAX_PAGES_TO_VISIT})`);
+      }
+    } catch (error) {
+      logger.error("Critical error during crawling process", error);
+    } finally {
+      await finish();
     }
-
-    logger.info(`Max number of pages limit reached (${MAX_PAGES_TO_VISIT})`);
-    finish();
   };
 
   const visit = async (url) => {
@@ -96,22 +107,21 @@ const crawler = (parser, client) => {
   };
 
   const canFetch = async (url, userAgent) => {
-    return new Promise((resolve) => {
-      const parser = new robots.RobotsParser(`${protocol}//${hostname}/robots.txt`);
-      parser.canFetch(userAgent, url, (access) => {
-        resolve(access);
-      });
+    return new Promise((resolve, reject) => {
+      try {
+        const parser = new robots.RobotsParser(`${protocol}//${hostname}/robots.txt`);
+        parser.canFetch(userAgent, url, (access) => {
+          resolve(access);
+        });
+      } catch (error) {
+        reject(error);
+      }
     });
   };
 
   const finish = async () => {
     logger.info("************** Finish ********************");
-    try {
-      await client.quit(); // Chiudi correttamente la connessione Redis
-      logger.info("Redis connection closed");
-    } catch (err) {
-      logger.error("Error closing Redis connection", err);
-    }
+    await queueManager.close(); // Chiudi correttamente la connessione Redis
     process.exit(0);
   };
 
