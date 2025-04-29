@@ -1,4 +1,4 @@
-const logger = require("./src/lib/log").default;
+const logger = require("./src/lib/logger").default;
 
 console.log(logger.error);
 
