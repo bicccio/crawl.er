@@ -23,9 +23,7 @@ export async function setupCrawler() {
 async function setupRedisClient() {
   const redisClient = createClient();
   redisClient.on("error", (err) => logger.error("Redis client error", err));
-
   await redisClient.connect();
-
   return redisClient;
 }
 
