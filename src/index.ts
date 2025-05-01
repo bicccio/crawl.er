@@ -1,4 +1,4 @@
-const logger = require("./src/lib/logger").default;
+const logger = require("./lib/logger").default;
 
 // Configurazione Babel per la transpilazione
 require("@babel/register")({
@@ -15,7 +15,7 @@ require("@babel/register")({
 });
 
 // Importa direttamente il servizio crawler
-const { setupCrawler } = require("./src/services/crawlerService");
+const { setupCrawler } = require("./services/crawlerService");
 
 // Funzione principale che avvia il crawler
 (async () => {
