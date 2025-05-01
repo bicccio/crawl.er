@@ -1,15 +1,16 @@
 import request from "request-promise";
 import parserUrl from "url";
-import UrlCleaner from "./urlCleaner";
 import robots from "robots";
+
+import UrlCleaner from "./urlCleaner";
 import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../config.json";
 import logger from "./logger";
 
-const crawler = (parser, queueManager) => {
-  let numPagesVisited = 0,
-    baseUrl,
-    protocol,
-    hostname;
+const crawler = (parser: any, queueManager: any) => {
+  let numPagesVisited = 0;
+  let baseUrl: string;
+  let protocol: string;
+  let hostname: string;
 
   const crawl = async () => {
     try {
@@ -47,9 +48,9 @@ const crawler = (parser, queueManager) => {
             continue;
           }
 
-          baseUrl = currentHostname;
-          hostname = currentHostname;
-          protocol = currentProtocol;
+          baseUrl = currentHostname!;
+          hostname = currentHostname!;
+          protocol = currentProtocol!;
         }
 
         try {
@@ -58,7 +59,7 @@ const crawler = (parser, queueManager) => {
           if (SLEEP > 0) {
             await sleep(SLEEP);
           }
-        } catch (error) {
+        } catch (error: any) {
           await queueManager.markUrlAsVisited(cleanUrl);
           logger.error(JSON.stringify({ url: cleanUrl, error: error.message }));
         }
@@ -73,10 +74,10 @@ const crawler = (parser, queueManager) => {
     }
   };
 
-  const visit = async (url) => {
+  const visit = async (url: string) => {
     const html = await request({
       uri: url,
-      headers: HEADERS,
+      headers: HEADERS as unknown as Headers,
       timeout: REQUEST_TIMEOUT,
     });
 
@@ -91,7 +92,7 @@ const crawler = (parser, queueManager) => {
     await updateLinks(links);
   };
 
-  const updateLinks = async (links) => {
+  const updateLinks = async (links: string[]) => {
     if (links.length === 0) return;
 
     for (const link of links) {
@@ -106,11 +107,11 @@ const crawler = (parser, queueManager) => {
     }
   };
 
-  const canFetch = async (url, userAgent) => {
+  const canFetch = async (url: string, userAgent: string): Promise<boolean> => {
     return new Promise((resolve, reject) => {
       try {
         const parser = new robots.RobotsParser(`${protocol}//${hostname}/robots.txt`);
-        parser.canFetch(userAgent, url, (access) => {
+        parser.canFetch(userAgent, url, (access: boolean) => {
           resolve(access);
         });
       } catch (error) {
@@ -125,7 +126,7 @@ const crawler = (parser, queueManager) => {
     process.exit(0);
   };
 
-  const sleep = (ms) => {
+  const sleep = (ms: number) => {
     return new Promise((resolve) => {
       setTimeout(resolve, ms);
     });

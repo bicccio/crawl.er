@@ -1,7 +1,10 @@
-const urlCleaner = () => {
-  const clean = (url, hostname, protocol) => {
-    // remove trailing slash
+interface UrlCleaner {
+  clean: (url: string, hostname?: string, protocol?: string) => string;
+}
 
+const urlCleaner = (): UrlCleaner => {
+  const clean = (url: string, hostname?: string, protocol?: string) => {
+    // remove trailing slash
     let cleanUrl = url.replace(/\/$/, "");
 
     let completeUrl = "";

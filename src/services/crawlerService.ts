@@ -30,7 +30,7 @@ async function setupRedisClient() {
 /**
  * Initializes the URL queue with the provided URLs
  */
-async function initializeUrlQueue(redisClient, urls) {
+async function initializeUrlQueue(redisClient: any, urls: string[]) {
   try {
     // Inizializziamo QueueManager con il client Redis
     const queueManager = QueueManagerFactory(redisClient);
