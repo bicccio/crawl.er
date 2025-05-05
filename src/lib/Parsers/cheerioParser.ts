@@ -1,16 +1,5 @@
 import * as cheerio from "cheerio";
-
-interface Element {
-  title: string;
-  links: string[];
-}
-
-interface Parser {
-  parse: (html: string) => void;
-  getElements: () => Element;
-  getLinks: () => string[];
-  getTitle: () => string;
-}
+import { Parser, Element } from "./Parser";
 
 const cheerioParser = (): Parser => {
   // Inizializzazione di $ con un documento vuoto di default
