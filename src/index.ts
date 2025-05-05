@@ -1,4 +1,4 @@
-import logger from "./lib/logger";
+import logger from "./utils/logger";
 import { setupCrawler } from "./services/crawlerService";
 
 // Funzione principale che avvia il crawler
