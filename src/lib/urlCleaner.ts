@@ -6,7 +6,6 @@ const urlCleaner = (): UrlCleaner => {
   const clean = (url: string, hostname?: string, protocol?: string) => {
     // remove trailing slash
     let cleanUrl = url.replace(/\/$/, "");
-
     let completeUrl = "";
     if (cleanUrl.includes("http")) {
       // urls with protocol and all
