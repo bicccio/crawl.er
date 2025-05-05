@@ -1,8 +1,8 @@
 import { createClient } from "redis";
-import Parser from "../lib/cheerioParser";
+import Parser from "../lib/Parsers/cheerioParser";
 import Crawler from "../lib/crawler";
 import { START_URLS, BLACKLIST } from "../../config.json";
-import logger from "../lib/logger";
+import logger from "../utils/logger";
 import QueueManagerFactory from "../lib/queueManager";
 
 /**

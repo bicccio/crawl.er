@@ -3,8 +3,8 @@ import parserUrl from "url";
 import robots from "robots";
 
 import UrlCleaner from "./urlCleaner";
+import logger from "../utils/logger";
 import { MAX_PAGES_TO_VISIT, HEADERS, REQUEST_TIMEOUT, BLACKLIST, SLEEP } from "../../config.json";
-import logger from "./logger";
 
 const crawler = (parser: any, queueManager: any) => {
   let numPagesVisited = 0;
