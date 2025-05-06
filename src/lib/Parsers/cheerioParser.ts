@@ -1,11 +1,12 @@
 import * as cheerio from "cheerio";
+import { Parser, Element } from "./Parser";
 
-const cheerioParser = () => {
+const cheerioParser = (): Parser => {
   // Inizializzazione di $ con un documento vuoto di default
-  let $ = cheerio.load("");
+  let $: cheerio.CheerioAPI = cheerio.load("");
   let isParsed = false;
 
-  const parse = (html) => {
+  const parse = (html: string): void => {
     if (!html) {
       throw new Error("HTML is required for parsing");
     }
@@ -13,7 +14,7 @@ const cheerioParser = () => {
     isParsed = true;
   };
 
-  const isReady = () => {
+  const isReady = (): boolean => {
     if (!isParsed) {
       console.warn("Parser not initialized. Call parse() method first.");
       return false;
@@ -21,7 +22,7 @@ const cheerioParser = () => {
     return true;
   };
 
-  const getElements = () => {
+  const getElements = (): Element => {
     if (!isReady()) {
       return { title: "", links: [] };
     }
@@ -32,20 +33,20 @@ const cheerioParser = () => {
     };
   };
 
-  const getTitle = () => {
+  const getTitle = (): string => {
     if (!isReady()) return "";
     return $("title").text();
   };
 
-  const getLinks = () => {
+  const getLinks = (): string[] => {
     if (!isReady()) return [];
 
     const anchors = $("a");
-    const hrefs = [];
+    const hrefs: string[] = [];
 
     $(anchors).each((index) => {
       const href = $(anchors[index]).attr("href");
-      hrefs.push(href);
+      hrefs.push(href!);
     });
 
     return hrefs;

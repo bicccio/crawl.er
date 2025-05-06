@@ -1,8 +1,8 @@
 import { createClient } from "redis";
-import Parser from "../lib/cheerioParser";
+import Parser from "../lib/Parsers/cheerioParser";
 import Crawler from "../lib/crawler";
 import { START_URLS, BLACKLIST } from "../../config.json";
-import logger from "../lib/logger";
+import logger from "../utils/logger";
 import QueueManagerFactory from "../lib/queueManager";
 
 /**
@@ -23,16 +23,14 @@ export async function setupCrawler() {
 async function setupRedisClient() {
   const redisClient = createClient();
   redisClient.on("error", (err) => logger.error("Redis client error", err));
-
   await redisClient.connect();
-
   return redisClient;
 }
 
 /**
  * Initializes the URL queue with the provided URLs
  */
-async function initializeUrlQueue(redisClient, urls) {
+async function initializeUrlQueue(redisClient: any, urls: string[]) {
   try {
     // Inizializziamo QueueManager con il client Redis
     const queueManager = QueueManagerFactory(redisClient);

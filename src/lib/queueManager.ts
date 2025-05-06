@@ -1,17 +1,17 @@
-import logger from "./logger";
+import logger from "../utils/logger";
 
 /**
  * Factory che crea un gestore della coda di URL per il crawler
  * @param {Object} client - Il client Redis da utilizzare
  * @returns {Object} - Un oggetto con metodi per gestire la coda
  */
-const QueueManager = (client) => {
+const QueueManager = (client: any) => {
   /**
    * Aggiunge un URL alla coda se non è già stato visitato
    * @param {string} url - L'URL da aggiungere alla coda
    * @returns {Promise<void>}
    */
-  const addUrlToQueue = async (url) => {
+  const addUrlToQueue = async (url: string) => {
     const isVisited = await client.sIsMember("visitedUrls", url);
     if (!isVisited) {
       const score = Date.now(); // Usiamo il timestamp corrente come punteggio
@@ -42,7 +42,7 @@ const QueueManager = (client) => {
    * @param {string} url - L'URL da segnare come visitato
    * @returns {Promise<void>}
    */
-  const markUrlAsVisited = async (url) => {
+  const markUrlAsVisited = async (url: string) => {
     await client.sAdd("visitedUrls", url);
     logger.info(`URL marcato come visitato: ${url}`);
   };
