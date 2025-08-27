@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio";
-import { Parser, Element } from "./Parser";
+import { Parser, Element } from "./parser";
 
 const cheerioParser = (): Parser => {
   // Inizializzazione di $ con un documento vuoto di default
