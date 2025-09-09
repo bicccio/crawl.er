@@ -1,19 +1,19 @@
-const UrlCleaner = require("../src/lib/UrlCleaner.js").default;
-const expect = require("chai").expect;
+import urlCleaner from "../src/lib/urlCleaner";
+import { expect } from "chai";
 
 describe("UrlCleaner", () => {
-  let urlCleaner;
+  let urlCleanerInstance: ReturnType<typeof urlCleaner>;
   const protocol = "http:";
   const hostname = "www.google.com";
 
   beforeEach(() => {
-    urlCleaner = UrlCleaner();
+    urlCleanerInstance = urlCleaner();
   });
 
   it("leave unalterated complete urls", () => {
     const url = "http://www.google.com";
 
-    const cleanUrl = urlCleaner.clean(url);
+    const cleanUrl = urlCleanerInstance.clean(url);
 
     expect(cleanUrl).to.be.equal("http://www.google.com");
   });
@@ -21,7 +21,7 @@ describe("UrlCleaner", () => {
   it("remove leading slash", () => {
     const url = "http://www.google.com/miao";
 
-    const cleanUrl = urlCleaner.clean(url);
+    const cleanUrl = urlCleanerInstance.clean(url);
 
     expect(cleanUrl).to.be.equal("http://www.google.com/miao");
   });
@@ -29,7 +29,7 @@ describe("UrlCleaner", () => {
   it("remove leading slash", () => {
     const url = "http://www.google.com/";
 
-    const cleanUrl = urlCleaner.clean(url);
+    const cleanUrl = urlCleanerInstance.clean(url);
 
     expect(cleanUrl).to.be.equal("http://www.google.com");
   });
@@ -37,7 +37,7 @@ describe("UrlCleaner", () => {
   it("add protocol if not present", () => {
     const url = "//www.google.com";
 
-    const cleanUrl = urlCleaner.clean(url, null, protocol);
+    const cleanUrl = urlCleanerInstance.clean(url, undefined, protocol);
 
     expect(cleanUrl).to.be.equal("http://www.google.com");
   });
@@ -45,7 +45,7 @@ describe("UrlCleaner", () => {
   it("add protocol if not present", () => {
     const url = "//www.google.com/";
 
-    const cleanUrl = urlCleaner.clean(url, null, protocol);
+    const cleanUrl = urlCleanerInstance.clean(url, undefined, protocol);
 
     expect(cleanUrl).to.be.equal("http://www.google.com");
   });
@@ -53,7 +53,7 @@ describe("UrlCleaner", () => {
   it("add protocol and hostname if not presents", () => {
     const url = "/miao";
 
-    const cleanUrl = urlCleaner.clean(url, hostname, protocol);
+    const cleanUrl = urlCleanerInstance.clean(url, hostname, protocol);
 
     expect(cleanUrl).to.be.equal("http://www.google.com/miao");
   });
@@ -61,7 +61,7 @@ describe("UrlCleaner", () => {
   it("add protocol and hostname if not presents", () => {
     const url = "/miao/";
 
-    const cleanUrl = urlCleaner.clean(url, hostname, protocol);
+    const cleanUrl = urlCleanerInstance.clean(url, hostname, protocol);
 
     expect(cleanUrl).to.be.equal("http://www.google.com/miao");
   });
@@ -69,7 +69,7 @@ describe("UrlCleaner", () => {
   it("add protocol and hostname if not presents", () => {
     const url = "miao";
 
-    const cleanUrl = urlCleaner.clean(url, hostname, protocol);
+    const cleanUrl = urlCleanerInstance.clean(url, hostname, protocol);
 
     expect(cleanUrl).to.be.equal("http://www.google.com/miao");
   });
@@ -77,7 +77,7 @@ describe("UrlCleaner", () => {
   it("add protocol and hostname if not presents", () => {
     const url = "miao/";
 
-    const cleanUrl = urlCleaner.clean(url, hostname, protocol);
+    const cleanUrl = urlCleanerInstance.clean(url, hostname, protocol);
 
     expect(cleanUrl).to.be.equal("http://www.google.com/miao");
   });
@@ -85,7 +85,7 @@ describe("UrlCleaner", () => {
   it("add protocol and hostname if not presents", () => {
     const url = "/";
 
-    const cleanUrl = urlCleaner.clean(url, hostname, protocol);
+    const cleanUrl = urlCleanerInstance.clean(url, hostname, protocol);
 
     expect(cleanUrl).to.be.equal("http://www.google.com");
   });

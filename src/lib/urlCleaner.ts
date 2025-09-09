@@ -28,3 +28,4 @@ const urlCleaner = (): UrlCleaner => {
 };
 
 export default urlCleaner;
+export { UrlCleaner };
