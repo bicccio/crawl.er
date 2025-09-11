@@ -1,62 +1,62 @@
 import logger from "../utils/logger";
 
 /**
- * Factory che crea un gestore della coda di URL per il crawler
- * @param {Object} client - Il client Redis da utilizzare
- * @returns {Object} - Un oggetto con metodi per gestire la coda
+ * Factory that creates a URL queue manager for the crawler
+ * @param {Object} client - The Redis client to use
+ * @returns {Object} - An object with methods to manage the queue
  */
 const QueueManager = (client: any) => {
   /**
-   * Aggiunge un URL alla coda se non è già stato visitato
-   * @param {string} url - L'URL da aggiungere alla coda
+   * Adds a URL to the queue if it hasn't been visited yet
+   * @param {string} url - The URL to add to the queue
    * @returns {Promise<void>}
    */
   const addUrlToQueue = async (url: string) => {
     const isVisited = await client.sIsMember("visitedUrls", url);
     if (!isVisited) {
-      const score = Date.now(); // Usiamo il timestamp corrente come punteggio
+      const score = Date.now(); // We use the current timestamp as score
       await client.zAdd("urlQueue", { score, value: url });
-      logger.info(`URL aggiunto: ${url} con punteggio ${score}`);
+      logger.info(`URL added: ${url} with score ${score}`);
     } else {
-      logger.info(`URL già visitato: ${url}`);
+      logger.info(`URL already visited: ${url}`);
     }
   };
 
   /**
-   * Ottiene e rimuove il prossimo URL da visitare dalla coda
-   * @returns {Promise<Object|null>} - L'URL da visitare o null se la coda è vuota
+   * Gets and removes the next URL to visit from the queue
+   * @returns {Promise<Object|null>} - The URL to visit or null if the queue is empty
    */
   const getNextUrlToVisit = async () => {
     const url = await client.zPopMin("urlQueue");
     if (url) {
-      logger.info(`Prossimo URL da visitare: ${url.value}`);
+      logger.info(`Next URL to visit: ${url.value}`);
       return url;
     } else {
-      logger.info("Nessun URL rimasto da visitare.");
+      logger.info("No URLs left to visit.");
       return null;
     }
   };
 
   /**
-   * Segna un URL come visitato
-   * @param {string} url - L'URL da segnare come visitato
+   * Marks a URL as visited
+   * @param {string} url - The URL to mark as visited
    * @returns {Promise<void>}
    */
   const markUrlAsVisited = async (url: string) => {
     await client.sAdd("visitedUrls", url);
-    logger.info(`URL marcato come visitato: ${url}`);
+    logger.info(`URL marked as visited: ${url}`);
   };
 
   /**
-   * Chiude la connessione Redis
+   * Closes the Redis connection
    * @returns {Promise<void>}
    */
   const close = async () => {
     try {
       await client.quit();
-      logger.info("Connessione Redis chiusa.");
+      logger.info("Redis connection closed.");
     } catch (err) {
-      logger.error("Errore durante la chiusura della connessione Redis:", err);
+      logger.error("Error closing Redis connection:", err);
     }
   };
 
