@@ -1,5 +1,4 @@
 import request from "request-promise";
-import parserUrl from "url";
 import robots from "robots";
 
 import UrlCleaner from "./urlCleaner";
@@ -22,11 +21,41 @@ const crawler = (parser: any, queueManager: any) => {
           break;
         }
 
-        // remove leading slash
+        // remove trailing slash
         const cleanUrl = currentUrl.value.replace(/\/$/, "");
-        const urlInfo = parserUrl.parse(cleanUrl);
 
-        const { hostname: currentHostname, protocol: currentProtocol } = urlInfo;
+        // Check if URL is absolute or relative
+        let urlInfo: URL;
+        let currentHostname: string;
+        let currentProtocol: string;
+        let finalUrl: string;
+
+        try {
+          if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
+            // Absolute URL
+            urlInfo = new URL(cleanUrl);
+            currentHostname = urlInfo.hostname;
+            currentProtocol = urlInfo.protocol;
+          } else {
+            // Relative URL - convert to absolute using existing base
+            if (!baseUrl || !protocol) {
+              logger.warn(`Skipping relative URL ${cleanUrl} - no base URL established`);
+              await queueManager.markUrlAsVisited(cleanUrl);
+              continue;
+            }
+            const absoluteUrl = `${protocol}//${baseUrl}${cleanUrl.startsWith("/") ? cleanUrl : "/" + cleanUrl}`;
+            urlInfo = new URL(absoluteUrl);
+            currentHostname = urlInfo.hostname;
+            currentProtocol = urlInfo.protocol;
+          }
+
+          // Get the final absolute URL
+          finalUrl = urlInfo.toString();
+        } catch (error) {
+          logger.error(`Invalid URL format: ${cleanUrl}`, error);
+          await queueManager.markUrlAsVisited(cleanUrl);
+          continue;
+        }
 
         if (currentHostname !== baseUrl) {
           if (BLACKLIST.includes(currentHostname)) {
@@ -36,15 +65,15 @@ const crawler = (parser: any, queueManager: any) => {
           }
 
           try {
-            const fetchable = await canFetch(cleanUrl, HEADERS["User-Agent"]);
+            const fetchable = await canFetch(finalUrl, HEADERS["User-Agent"]);
             if (!fetchable) {
-              logger.info(`${cleanUrl} not fetchable`);
-              await queueManager.markUrlAsVisited(cleanUrl);
+              logger.info(`${finalUrl} not fetchable`);
+              await queueManager.markUrlAsVisited(finalUrl);
               continue;
             }
           } catch (error) {
-            logger.error(`Error checking robots.txt for ${cleanUrl}`, error);
-            await queueManager.markUrlAsVisited(cleanUrl);
+            logger.error(`Error checking robots.txt for ${finalUrl}`, error);
+            await queueManager.markUrlAsVisited(finalUrl);
             continue;
           }
 
@@ -54,7 +83,7 @@ const crawler = (parser: any, queueManager: any) => {
         }
 
         try {
-          await visit(cleanUrl);
+          await visit(finalUrl);
 
           if (SLEEP > 0) {
             await sleep(SLEEP);
