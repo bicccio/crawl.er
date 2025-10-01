@@ -1,7 +1,7 @@
 import { createClient } from "redis";
 import Parser from "../lib/parsers/cheerioParser";
 import Crawler from "../lib/crawler";
-import { SEED_URLS, BLACKLIST } from "../../config.json";
+import { SEED_URLS, BLACKLIST, REDIS } from "../../config.json";
 import logger from "../utils/logger";
 import QueueManagerFactory from "../lib/queueManager";
 
@@ -21,7 +21,14 @@ export async function setupCrawler() {
  * Configures the Redis client and initializes the URL queue
  */
 async function setupRedisClient() {
-  const redisClient = createClient();
+  const redisClient = createClient({
+    socket: {
+      host: REDIS.host,
+      port: REDIS.port,
+    },
+    password: REDIS.password,
+  });
+
   redisClient.on("error", (err) => {
     logger.error("Redis client error", err);
     process.exit(1);
@@ -37,10 +44,10 @@ async function setupRedisClient() {
  * Initializes the URL queue with the provided URLs
  */
 async function initializeUrlQueue(redisClient: any, urls: string[]) {
-  try {
-    // Inizializziamo QueueManager con il client Redis
-    const queueManager = QueueManagerFactory(redisClient);
+  // Inizializziamo QueueManager con il client Redis
+  const queueManager = QueueManagerFactory(redisClient);
 
+  try {
     await Promise.all(
       urls.map(async (url) => {
         // forse la pulizie delle URL andrebbe fatta nel queueManager
@@ -56,8 +63,8 @@ async function initializeUrlQueue(redisClient: any, urls: string[]) {
 
     return queueManager;
   } catch (err) {
-    logger.error(err);
+    logger.error("Error initializing URL queue:", err);
+    // Restituiamo comunque il queueManager invece del redisClient
+    return queueManager;
   }
-
-  return redisClient;
 }

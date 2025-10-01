@@ -8,4 +8,10 @@ export interface Config {
   };
   REQUEST_TIMEOUT: number;
   SLEEP: number;
+  SEED_URLS: string[];
+  REDIS: {
+    host: string;
+    port: number;
+    password: string;
+  };
 }

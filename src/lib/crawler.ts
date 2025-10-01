@@ -11,6 +11,9 @@ const crawler = (parser: any, queueManager: any) => {
   let protocol: string;
   let hostname: string;
 
+  // Crea una singola istanza di UrlCleaner
+  const urlCleaner = UrlCleaner();
+
   const crawl = async () => {
     try {
       while (numPagesVisited < MAX_PAGES_TO_VISIT) {
@@ -127,8 +130,8 @@ const crawler = (parser: any, queueManager: any) => {
     for (const link of links) {
       if (!link) continue;
 
-      const { clean: cleanUrl } = UrlCleaner();
-      const completeUrl = cleanUrl(link, hostname, protocol);
+      // Usa l'istanza esistente invece di crearne una nuova
+      const completeUrl = urlCleaner.clean(link, hostname, protocol);
 
       if (BLACKLIST.includes(hostname)) continue;
 
